@@ -8,15 +8,6 @@ static const char *const TAG = "aw87559";
 void AW87559Component::setup() {
   ESP_LOGD(TAG, "Setting up AW87559...");
 
-  // 处理复位引脚（如果配置了）
-  if (this->reset_gpio_ != nullptr) {
-    this->reset_gpio_->setup();
-    this->reset_gpio_->digital_write(false);
-    esphome::delay(2);
-    this->reset_gpio_->digital_write(true);
-    esphome::delay(2);
-  }
-
   // 读取芯片 ID 寄存器 0x00，应返回 0x5A
   uint8_t id;
   if (!this->read_reg(AW87559_REG_CHIPID, &id)) {
@@ -49,44 +40,44 @@ void AW87559Component::dump_config() {
   }
 }
 
-bool AW87559Component::write_reg(uint8_t reg, uint8_t value) {
-  return this->write_bytes(reg, &value, 1);
-}
+// bool AW87559Component::write_reg(uint8_t reg, uint8_t value) {
+//   return this->write_bytes(reg, &value, 1);
+// }
 
-bool AW87559Component::read_reg(uint8_t reg, uint8_t *out_value) {
-  if (out_value == nullptr) {
-    ESP_LOGE(TAG, "read_reg: output buffer is null");
-    return false;
-  }
+// bool AW87559Component::read_reg(uint8_t reg, uint8_t *out_value) {
+//   if (out_value == nullptr) {
+//     ESP_LOGE(TAG, "read_reg: output buffer is null");
+//     return false;
+//   }
 
-  // 第一步：发送要读取的寄存器地址（不带后续数据）
-  if (!this->write_bytes(reg, nullptr, 0)) {
-    ESP_LOGE(TAG, "Failed to send register address 0x%02X", reg);
-    return false;
-  }
+//   // 第一步：发送要读取的寄存器地址（不带后续数据）
+//   if (!this->write_bytes(reg, nullptr, 0)) {
+//     ESP_LOGE(TAG, "Failed to send register address 0x%02X", reg);
+//     return false;
+//   }
 
-  // 第二步：读取 1 字节数据（不带寄存器地址）
-  return this->read_bytes(out_value, 1);
-}
+//   // 第二步：读取 1 字节数据（不带寄存器地址）
+//   return this->read_bytes(out_value, 1);
+// }
 
-bool AW87559Component::apply_table(const uint8_t *pairs, size_t length) {
-  if (pairs == nullptr || (length % 2) != 0) {
-    ESP_LOGE(TAG, "Invalid table: length=%zu must be even", length);
-    return false;
-  }
+// bool AW87559Component::apply_table(const uint8_t *pairs, size_t length) {
+//   if (pairs == nullptr || (length % 2) != 0) {
+//     ESP_LOGE(TAG, "Invalid table: length=%zu must be even", length);
+//     return false;
+//   }
 
-  for (size_t i = 0; i < length; i += 2) {
-    uint8_t reg = pairs[i];
-    uint8_t val = pairs[i + 1];
+//   for (size_t i = 0; i < length; i += 2) {
+//     uint8_t reg = pairs[i];
+//     uint8_t val = pairs[i + 1];
 
-    if (!this->write_reg(reg, val)) {
-      ESP_LOGE(TAG, "Failed to write table entry at index %zu (reg=0x%02X)", i, reg);
-      return false;
-    }
-  }
+//     if (!this->write_reg(reg, val)) {
+//       ESP_LOGE(TAG, "Failed to write table entry at index %zu (reg=0x%02X)", i, reg);
+//       return false;
+//     }
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 }  // namespace aw87559
 }  // namespace esphome
