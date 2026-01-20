@@ -76,12 +76,6 @@ void Si5351Component::setup() {
 void Si5351Component::dump_config() {
   ESP_LOGCONFIG(TAG, "Si5351 Clock Generator:");
   LOG_I2C_DEVICE(this);
-  
-  if (is_failed()) {
-    ESP_LOGE(TAG, "  Setup failed!");
-  } else {
-    ESP_LOGCONFIG(TAG, "  Output frequency: CLK1 enabled");
-  }
 }
   
 }  // namespace si5351
