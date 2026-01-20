@@ -1,0 +1,27 @@
+import esphome.codegen as cg
+import esphome.config_validation as cv
+from esphome.components import i2c
+from esphome.const import CONF_ID
+
+CODEOWNERS = ["@your_github_username"]
+DEPENDENCIES = ["i2c"]
+AUTO_LOAD = []
+
+si5351_ns = cg.esphome_ns.namespace("si5351")
+Si5351Component = si5351_ns.class_("Si5351Component", cg.Component, i2c.I2CDevice)
+
+CONFIG_SCHEMA = (
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(Si5351Component),
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+    .extend(i2c.i2c_device_schema(0x60))  # Si5351 default I2C address is 0x60
+)
+
+
+async def to_code(config):
+    var = cg.new_Pvariable(config[cv.GenerateID()])
+    await cg.register_component(var, config)
+    await i2c.register_i2c_device(var, config)

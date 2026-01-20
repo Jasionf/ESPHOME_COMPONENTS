@@ -29,11 +29,11 @@ static const uint8_t AW87559_CHIPID  = 0x5A;
 /********************************************
  * Register Access
  *******************************************/
-#define AW87559_REG_MAX			16
+static const uint8_t AW87559_REG_MAX = 16;
 
-#define AW87559_REG_NONE_ACCESS		0
-#define AW87559_REG_RD_ACCESS		(1 << 0)
-#define AW87559_REG_WR_ACCESS		(1 << 1)
+static const uint8_t AW87559_REG_NONE_ACCESS = 0;
+static const uint8_t AW87559_REG_RD_ACCESS = (1 << 0);
+static const uint8_t AW87559_REG_WR_ACCESS = (1 << 1);
 
 
 class AW87559Component : public Component, public i2c::I2CDevice {
