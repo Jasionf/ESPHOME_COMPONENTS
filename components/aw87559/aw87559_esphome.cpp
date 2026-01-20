@@ -59,7 +59,7 @@ bool AW87559Component::write_bytes(uint8_t reg, const uint8_t *data, size_t len)
     memcpy(&buf[1], data, len);
   }
 
-  return this->write_bytes_raw(buf, len + 1);
+  return this->write_bytes_16(buf, len + 1);
 }
 
 bool AW87559Component::write_reg(uint8_t reg, uint8_t value) {
@@ -69,12 +69,12 @@ bool AW87559Component::write_reg(uint8_t reg, uint8_t value) {
 bool AW87559Component::read_reg(uint8_t reg, uint8_t *out_value) {
   if (out_value == nullptr) return false;
 
-  if (!this->write_bytes_raw(&reg, 1)) {
+  if (!this->write_bytes_16(&reg, 1)) {
     ESP_LOGE(TAG, "Failed to send register address 0x%02X", reg);
     return false;
   }
 
-  if (!this->read_bytes_raw(out_value, 1)) {
+  if (!this->read_bytes_16(out_value, 1)) {
     ESP_LOGE(TAG, "Failed to read register 0x%02X", reg);
     return false;
   }
