@@ -17,7 +17,6 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(Si5351Component),
             cv.Optional(CONF_RESET_PIN): pins.gpio_pin_schema,
         }
-        }
     )
     .extend(cv.COMPONENT_SCHEMA)
     .extend(i2c.i2c_device_schema(0x60))  # Si5351 default I2C address is 0x60
