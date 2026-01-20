@@ -8,6 +8,7 @@ static const char *const TAG = "aw87559";
 void AW87559Component::setup() {
   ESP_LOGD(TAG, "Setting up AW87559...");
 
+  // 处理复位引脚（如果配置了）
   if (this->reset_gpio_ != nullptr) {
     this->reset_gpio_->setup();
     this->reset_gpio_->digital_write(false);
@@ -16,6 +17,7 @@ void AW87559Component::setup() {
     esphome::delay(2);
   }
 
+  // 读取芯片 ID 寄存器 0x00，应为 0x5A
   uint8_t id;
   if (!this->read_reg(AW87559_REG_CHIPID, &id)) {
     ESP_LOGE(TAG, "AW87559 not responding - read ID failed at address 0x%02X", this->address_);
@@ -29,7 +31,7 @@ void AW87559Component::setup() {
     ESP_LOGI(TAG, "AW87559 found with ID: 0x%02X", id);
   }
 
-  // 启用 PA
+  // 启用功率放大器（PA）：写 0x78 到系统控制寄存器 0x01
   if (!this->write_reg(AW87559_REG_SYSCTRL, 0x78)) {
     ESP_LOGE(TAG, "Failed to enable AW87559 PA");
     this->mark_failed();
@@ -47,39 +49,23 @@ void AW87559Component::dump_config() {
   }
 }
 
-bool AW87559Component::write_bytes(uint8_t reg, const uint8_t *data, size_t len) {
-  uint8_t buf[65];
-  if ((len + 1) > sizeof(buf)) {
-    ESP_LOGE(TAG, "Write buffer overflow: len=%zu", len);
-    return false;
-  }
-
-  buf[0] = reg;
-  if (len > 0 && data != nullptr) {
-    memcpy(&buf[1], data, len);
-  }
-
-  return this->write_bytes_16(buf, len + 1);
-}
-
 bool AW87559Component::write_reg(uint8_t reg, uint8_t value) {
   return this->write_bytes(reg, &value, 1);
 }
 
 bool AW87559Component::read_reg(uint8_t reg, uint8_t *out_value) {
-  if (out_value == nullptr) return false;
+  if (out_value == nullptr) {
+    return false;
+  }
 
-  if (!this->write_bytes_16(&reg, 1)) {
+  // 发送寄存器地址
+  if (!this->write_bytes(reg, nullptr, 0)) {
     ESP_LOGE(TAG, "Failed to send register address 0x%02X", reg);
     return false;
   }
 
-  if (!this->read_bytes_16(out_value, 1)) {
-    ESP_LOGE(TAG, "Failed to read register 0x%02X", reg);
-    return false;
-  }
-
-  return true;
+  // 读取 1 字节数据
+  return this->read_bytes(out_value, 1);
 }
 
 bool AW87559Component::apply_table(const uint8_t *pairs, size_t length) {
