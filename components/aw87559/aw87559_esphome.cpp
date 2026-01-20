@@ -1,5 +1,3 @@
-#include "aw87559.h"
-
 namespace esphome {
 namespace aw87559 {
 
