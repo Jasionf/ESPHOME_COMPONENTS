@@ -1,3 +1,9 @@
+#pragma once
+
+#include "esphome/components/audio_dac/audio_dac.h"
+#include "esphome/components/i2c/i2c.h"
+#include "esphome/core/component.h"
+
 namespace esphome {
 namespace aw87559 {
 
