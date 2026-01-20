@@ -90,15 +90,6 @@ void Si5351Component::dump_config() {
     ESP_LOGCONFIG(TAG, "  Output frequency: CLK1 enabled");
   }
 }
-
-bool Si5351Component::write_reg(uint8_t reg, uint8_t value) {
-  return write_bytes_raw({reg, value});
-}
-
-bool Si5351Component::write_regs(uint8_t start_reg, const uint8_t *data, size_t length) {
-  if (data == nullptr || length == 0) {
-    return false;
-  }
   
   // Create buffer: [reg_addr, data[0], data[1], ...]
   std::vector<uint8_t> buf;
@@ -107,14 +98,6 @@ bool Si5351Component::write_regs(uint8_t start_reg, const uint8_t *data, size_t 
   buf.insert(buf.end(), data, data + length);
   
   return write_bytes_raw(buf);
-}
-
-bool Si5351Component::read_reg(uint8_t reg, uint8_t *out_value) {
-  if (out_value == nullptr) {
-    return false;
-  }
-  
-  return read_bytes_raw(out_value, 1);
 }
 
 }  // namespace si5351
