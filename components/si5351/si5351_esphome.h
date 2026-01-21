@@ -25,7 +25,7 @@ class Si5351Component : public esphome::Component, public esphome::i2c::I2CDevic
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override { return esphome::setup_priority::HARDWARE; }
-
+  bool setup_complete_{false};
 };
 
 }  // namespace si5351
