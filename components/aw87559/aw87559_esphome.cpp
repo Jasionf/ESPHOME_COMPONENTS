@@ -11,7 +11,7 @@ namespace aw87559 {
   } 
 
 // Return false; use outside of setup
-#define AW87559_ERROR_FAILED(func) \
+#define AW87559_ERROR_CHECK(func) \
   if (!(func)) { \
     return false; \
   }
