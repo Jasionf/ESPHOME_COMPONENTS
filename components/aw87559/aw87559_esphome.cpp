@@ -8,7 +8,7 @@ namespace aw87559 {
   if(!(func)) {                                 \
  this->mark_failed(); \
     return; \
-  } while (0)
+  } 
 
 // Return false; use outside of setup
 #define AW87559_ERROR_FAILED(func) \
@@ -52,7 +52,6 @@ void AW87559Component::dump_config() {
   
   // 打印 I2C 地址信息
   LOG_I2C_DEVICE(this);
-  }
 
   // 打印初始化状态
   ESP_LOGCONFIG(TAG, "  Setup Status: %s", this->setup_complete_ ? "OK" : "FAILED");
