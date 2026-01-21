@@ -5,6 +5,7 @@
 #include "esphome/core/gpio.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+#include <cinttypes>
 
 namespace esphome {
 namespace aw87559 {
