@@ -29,42 +29,16 @@ static const uint8_t NUM_RGB_CHANNELS            = 4     // 4个通道（2条灯
 static const uint8_t NUM_LEDS_PER_GROUP          = 7     // 每组7个LED
 
 
-class STM32RGBLight : public light::AddressableLight, public Component, public i2c::I2CDevice {
+class STM32RGBLight : public Component, public i2c::I2CDevice {
  public:
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override { return esphome::setup_priority::HARDWARE; }
   bool setup_complete_{false};
 
-  light::LightTraits get_traits() override;
+  uint8_t echo_pyramid_rgb_set_brightness(int rgb_index, uint8_t brightness);
+  uint8_t echo_pyramid_rgb_set_all_leds_color(int rgb_index, uint8_t r, uint8_t g, uint8_t b);
 
-  /// ESPHome 会调用此方法来更新单个像素
-  light::ESPColorView operator[](int32_t index) const override;
-
-  int32_t size() const override { return this->num_leds_; }
-
-  void clear_effect_data() override;
-
-  /// 在 write_state() 后调用，真正发送数据给 STM32
-  void show() override;
-
-  void set_num_leds(uint16_t num_leds) { this->num_leds_ = num_leds; }
-  void set_strip(uint8_t strip) { this->strip_index_ = strip; }  // 0 或 1
-  void set_pixel_order(PixelOrder order);
-
- protected:
-  uint16_t num_leds_{0};
-  uint8_t strip_index_{0};               // 0 = strip1, 1 = strip2
-  PixelOrder pixel_order_{PixelOrder::GRB};
-
-  std::vector<Color> pixels_;            // 颜色缓存
-  std::vector<uint8_t> effect_data_;     // 效果数据
-
-  uint8_t rgb_offsets_[4]{0, 1, 2, 3};   // R,G,B,W 偏移
-
-  bool write_brightness(uint8_t brightness);
-  bool send_pixel_data();
-  uint8_t get_channel_reg(uint8_t group) const;  // group 0 or 1 for the strip
 };
 
 
