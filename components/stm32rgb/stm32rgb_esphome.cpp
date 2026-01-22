@@ -3,135 +3,123 @@
 namespace esphome {
 namespace stm32rgb {
 
-static const char *const TAG = "stm32rgb";
-
 void STM32RGBLight::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up STM32RGBLight @ 0x%02X strip %d", this->address_, this->strip_);
-
-  delay(50);  // 等待硬件稳定
-
-  // 简单测试通信
-  if (!this->write_byte(0xFF, 0xFF)) {  // 可以换成任意寄存器读写测试
+  if (this->num_leds_ == 0) {
+    ESP_LOGE(TAG, "num_leds not set!");
     this->mark_failed();
-    ESP_LOGE(TAG, "Failed to communicate with STM32RGB");
     return;
   }
 
-  // 可选：上电默认全灭或默认亮度
-  this->write_brightness(0);
+  this->pixels_.resize(this->num_leds_);
+  this->effect_data_.resize(this->num_leds_, 0);
 
-  ESP_LOGI(TAG, "STM32RGBLight initialized");
+  ESP_LOGCONFIG(TAG, "STM32 RGB bridge ready - %d LEDs on strip %d", this->num_leds_, this->strip_index_);
 }
 
 void STM32RGBLight::dump_config() {
-  ESP_LOGCONFIG(TAG, "STM32RGBLight:");
-  LOG_I2C_DEVICE(this);
-  ESP_LOGCONFIG(TAG, "  Strip: %d", this->strip_);
-  ESP_LOGCONFIG(TAG, "  LEDs per strip: %d", NUM_LEDS_PER_GROUP);
-  ESP_LOGCONFIG(TAG, "  State: %s", this->status_has_warning() ? "⚠ FAILED" : "OK");
+  ESP_LOGCONFIG(TAG, "STM32 RGB:");
+  ESP_LOGCONFIG(TAG, "  LEDs: %d", this->num_leds_);
+  ESP_LOGCONFIG(TAG, "  Strip: %d", this->strip_index_);
+  ESP_LOGCONFIG(TAG, "  I2C Addr: 0x%02X", this->address_);
 }
 
 light::LightTraits STM32RGBLight::get_traits() {
   auto traits = light::LightTraits();
   traits.set_supported_color_modes({light::ColorMode::RGB});
-  traits.set_min_brightness(0.01f);   // 建议保留一点最低亮度
-  traits.set_max_brightness(1.0f);
-  // 如果你想支持亮度 0-100 整数，可以在这里做调整，但 ESPHome 内部用 0-1.0f 更方便
+  traits.set_supports_brightness(true);
   return traits;
 }
 
-void STM32RGBLight::write_state(light::LightState *state) {
-  if (this->is_failed()) return;
-
-  float brightness = state->current_values.get_brightness() * 100.0f;
-  uint8_t bri = static_cast<uint8_t>(brightness + 0.5f);  // 四舍五入到整数 0-100
-  bri = std::min(bri, (uint8_t)100);
-
-  // 先设置全局亮度
-  if (!this->write_brightness(bri)) {
-    ESP_LOGW(TAG, "Failed to set brightness");
-    return;
+light::ESPColorView STM32RGBLight::operator[](int32_t index) const {
+  if (index < 0 || index >= this->size()) {
+    return light::ESPColorView(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
-  if (bri == 0 || !state->current_values.is_on()) {
-    // 全灭处理（可以优化为只写一次 0）
-    uint8_t zero_buf[NUM_LEDS_PER_GROUP * BYTES_PER_LED] = {0};
-    this->write_leds(zero_buf, sizeof(zero_buf));
-    return;
+  uint8_t *r = reinterpret_cast<uint8_t *>(&this->pixels_[index].red);
+  uint8_t *g = reinterpret_cast<uint8_t *>(&this->pixels_[index].green);
+  uint8_t *b = reinterpret_cast<uint8_t *>(&this->pixels_[index].blue);
+  uint8_t *w = nullptr;  // 无白通道
+
+  return light::ESPColorView(
+      r + this->rgb_offsets_[0],
+      g + this->rgb_offsets_[1],
+      b + this->rgb_offsets_[2],
+      w,
+      &this->effect_data_[index],
+      &this->correction_);
+}
+
+void STM32RGBLight::clear_effect_data() {
+  std::fill(this->effect_data_.begin(), this->effect_data_.end(), 0);
+}
+
+void STM32RGBLight::show() {
+  if (!this->should_show_()) return;
+
+  uint8_t brightness = static_cast<uint8_t>(this->state_->current_values.get_brightness() * 255.0f);
+  write_brightness(brightness);
+
+  if (!send_pixel_data()) {
+    ESP_LOGW(TAG, "Failed to send pixel data to STM32");
   }
 
-  // 准备颜色缓冲
-  uint8_t buf[NUM_LEDS_PER_GROUP * BYTES_PER_LED]{};
-
-  auto call = state->make_call();
-  call.set_rgb(state->current_values.get_red(),
-               state->current_values.get_green(),
-               state->current_values.get_blue());
-
-  for (uint8_t i = 0; i < NUM_LEDS_PER_GROUP; i++) {
-    float r, g, b;
-    call.get_rgb(&r, &g, &b);  // 统一颜色（单色灯带情况）
-
-    uint8_t hardware_idx = this->remap_led_index(this->strip_ * 2, i);  // strip0 → ch0&1, strip1 → ch2&3
-
-    // 每个组7颗，先写第一组 (ch even)
-    size_t offset1 = i * BYTES_PER_LED;
-    buf[offset1 + 0] = static_cast<uint8_t>(b * 255.0f);  // B
-    buf[offset1 + 1] = static_cast<uint8_t>(g * 255.0f);  // G
-    buf[offset1 + 2] = static_cast<uint8_t>(r * 255.0f);  // R
-    buf[offset1 + 3] = 0;
-
-    // 第二组 (ch odd) 用相同颜色（如果你想两条灯带不同颜色，需要再做两个 LightOutput）
-    size_t offset2 = (NUM_LEDS_PER_GROUP + i) * BYTES_PER_LED;
-    buf[offset2 + 0] = buf[offset1 + 0];
-    buf[offset2 + 1] = buf[offset1 + 1];
-    buf[offset2 + 2] = buf[offset1 + 2];
-    buf[offset2 + 3] = 0;
-  }
-
-  this->write_leds(buf, sizeof(buf));
+  this->mark_shown_();
 }
 
 bool STM32RGBLight::write_brightness(uint8_t brightness) {
-  uint8_t reg = (this->strip_ == 0) ? RGB1_BRIGHTNESS_REG_ADDR : RGB2_BRIGHTNESS_REG_ADDR;
+  uint8_t reg = (this->strip_index_ == 0) ? REG_BRIGHTNESS_STRIP1 : REG_BRIGHTNESS_STRIP2;
   return this->write_byte(reg, brightness);
 }
 
-bool STM32RGBLight::write_leds(const uint8_t *colors_buffer, size_t len) {
-  // 因为硬件分成两组寄存器，所以要分两次写
-  const uint8_t *p = colors_buffer;
+bool STM32RGBLight::send_pixel_data() {
+  // 每组 7 LEDs × 4 bytes = 28 bytes
+  const size_t bytes_per_group = LEDS_PER_GROUP * BYTES_PER_LED;
 
-  // 第一组 (ch0 or ch2)
-  uint8_t base1 = this->get_channel_base_addr(this->strip_ * 2);
-  if (!this->write_bytes(base1, p, NUM_LEDS_PER_GROUP * BYTES_PER_LED))
-    return false;
+  // 假设两条组（即使只有一条灯带，也可发两组或只发需要的）
+  uint8_t group0_reg = get_channel_reg(0);
+  uint8_t group1_reg = get_channel_reg(1);
 
-  // 第二组 (ch1 or ch3)
-  uint8_t base2 = this->get_channel_base_addr(this->strip_ * 2 + 1);
-  p += NUM_LEDS_PER_GROUP * BYTES_PER_LED;
-  if (!this->write_bytes(base2, p, NUM_LEDS_PER_GROUP * BYTES_PER_LED))
-    return false;
+  // 准备 raw buffer（GRB 顺序示例）
+  std::vector<uint8_t> buffer(bytes_per_group * 2, 0);
 
-  return true;
+  for (uint16_t i = 0; i < this->num_leds_; ++i) {
+    const auto &px = this->pixels_[i];
+    size_t offset = i * BYTES_PER_LED;
+
+    // 根据 pixel_order 排列字节顺序
+    buffer[offset + rgb_offsets_[0]] = px.green;  // 示例 GRB
+    buffer[offset + rgb_offsets_[1]] = px.red;
+    buffer[offset + rgb_offsets_[2]] = px.blue;
+    buffer[offset + 3] = 0;  // 白或保留
+  }
+
+  // 分组发送（I2C 一次最多 ~32-256 字节，视芯片而定）
+  bool ok = true;
+  ok &= this->write_bytes(group0_reg, buffer.data(), bytes_per_group);
+  ok &= this->write_bytes(group1_reg, buffer.data() + bytes_per_group, bytes_per_group);
+
+  // 可选：发送刷新命令
+  // this->write_byte(REG_REFRESH, 0x01);
+
+  return ok;
 }
 
-uint8_t STM32RGBLight::get_channel_base_addr(uint8_t logical_channel) const {
-  switch (logical_channel) {
-    case 0: return RGB_CH1_I1_COLOR_REG_ADDR;
-    case 1: return RGB_CH2_I1_COLOR_REG_ADDR;
-    case 2: return RGB_CH4_I1_COLOR_REG_ADDR;  // 注意硬件交换
-    case 3: return RGB_CH3_I1_COLOR_REG_ADDR;  // 注意硬件交换
-    default: return 0xFF;  // error
+uint8_t STM32RGBLight::get_channel_reg(uint8_t group) const {
+  if (this->strip_index_ == 0) {
+    return (group == 0) ? REG_COLOR_CH0 : REG_COLOR_CH1;
+  } else {
+    return (group == 0) ? REG_COLOR_CH2 : REG_COLOR_CH3;
   }
 }
 
-uint8_t STM32RGBLight::remap_led_index(uint8_t logical_channel, uint8_t index) const {
-  // 只有 channel 0 和 1 需要反转索引
-  if (logical_channel == 0 || logical_channel == 1) {
-    return NUM_LEDS_PER_GROUP - 1 - index;
-  }
-  return index;
+void STM32RGBLight::set_pixel_order(PixelOrder order) {
+  this->pixel_order_ = order;
+  uint8_t val = static_cast<uint8_t>(order);
+  this->rgb_offsets_[0] = (val >> 6) & 0b11;  // R
+  this->rgb_offsets_[1] = (val >> 4) & 0b11;  // G
+  this->rgb_offsets_[2] = (val >> 2) & 0b11;  // B
+  this->rgb_offsets_[3] = (val >> 0) & 0b11;  // W (如果有)
 }
 
-}  // namespace stm32rgb
+}  // namespace stm32gb
 }  // namespace esphome
