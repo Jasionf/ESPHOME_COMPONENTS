@@ -7,11 +7,7 @@ static const char *const TAG = "pyramidrgb";
 
 void PyramidRGBComponent::setup() {
   ESP_LOGI(TAG, "PyramidRGB init (STM32 RGB controller at 0x%02X)", this->address_);
-  // 基本探测：尝试读取一个寄存器（亮度寄存器）以确认 I2C 工作
-  uint8_t dummy = 0;
-  if (!this->read_bytes(RGB1_BRIGHTNESS_REG_ADDR, &dummy, 1)) {
-    ESP_LOGW(TAG, "Failed to communicate with STM32 RGB controller");
-  }
+  // 此处不做强制探测，避免不同固件下读寄存器失败导致误判。
 }
 
 void PyramidRGBComponent::dump_config() {
@@ -24,7 +20,7 @@ bool PyramidRGBComponent::set_strip_brightness(uint8_t strip, uint8_t brightness
   if (brightness > 100) brightness = 100;
   uint8_t reg = (strip == 1) ? RGB1_BRIGHTNESS_REG_ADDR : RGB2_BRIGHTNESS_REG_ADDR;
   uint8_t b = (uint8_t)((brightness * 255) / 100);
-  return this->write_bytes(reg, &b, 1);
+  return this->write_byte(reg, b);
 }
 
 uint8_t PyramidRGBComponent::channel_base_addr_(uint8_t channel) const {
@@ -38,7 +34,15 @@ uint8_t PyramidRGBComponent::channel_base_addr_(uint8_t channel) const {
 }
 
 bool PyramidRGBComponent::write_color_block_(uint8_t base_reg_addr, const uint8_t *color_bytes, size_t len) {
-  return this->write_bytes(base_reg_addr, color_bytes, len);
+  // 组装寄存器+数据的写入缓冲区
+  const size_t total = len + 1;
+  uint8_t *buf = (uint8_t *) malloc(total);
+  if (buf == nullptr) return false;
+  buf[0] = base_reg_addr;
+  memcpy(buf + 1, color_bytes, len);
+  bool ok = this->write(buf, total);
+  free(buf);
+  return ok;
 }
 
 bool PyramidRGBComponent::set_channel_color(uint8_t channel, uint8_t r, uint8_t g, uint8_t b) {
