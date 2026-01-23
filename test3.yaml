@@ -1,0 +1,179 @@
+esphome:
+  name: echo-pyramid
+  friendly_name: Echo-Pyramid
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: "/Ic5szx8+gWlbthXuWg9cTq5RDkih1bl+vfhNfLDW2Q="
+
+ota:
+  - platform: esphome
+    password: "6cf9a68db5bb8db6e92a32723ef524cf"
+
+
+wifi:
+  ssid: DeepSpace9
+  password: huxiaochuan
+
+  ap:
+    ssid: "Echo-Pyramid Fallback Hotspot"
+    password: "uSTvJjVzweZp"
+
+captive_portal:
+
+
+external_components:
+  - source: github://Jasionf/echo-pyramid-components@main
+    components: [aw87559, si5351,pyramidrgb,pyramidtouch]
+    refresh: 0s
+
+
+i2c:
+  - id: atoms3r
+    sda: GPIO38
+    scl: GPIO39
+    scan: true
+    frequency: 400kHz
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# Track current volume locally (0.0–1.0)
+globals:
+  - id: current_volume
+    type: float
+    restore_value: true
+    initial_value: '0.3'
+
+
+sensor:
+  - platform: pyramidtouch
+    address: 0x1A
+    update_interval: 50ms
+    publish_swipe_event: true
+    swipe_timeout_ms: 500
+    touch1:
+      name: "Touch 1"
+    touch2:
+      name: "Touch 2"
+    touch3:
+      name: "Touch 3"
+    touch4:
+      name: "Touch 4"
+    swipe_event:
+      name: "Touch Swipe Event"
+      entity_category: diagnostic
+      on_value:
+        then:
+          - lambda: |-
+              // Swipe codes:
+              // 1 = Left Up
+              // 2 = Left Down
+              // 3 = Right Up
+              // 4 = Right Down
+              const float step = 0.05f;  // 5% per gesture
+              float v = id(current_volume);
+              const int ev = (int) x;
+
+              if (ev == 1 || ev == 3) {
+                v = std::min(1.0f, v + step);
+              } else if (ev == 2 || ev == 4) {
+                v = std::max(0.0f, v - step);
+              } else {
+                return;
+              }
+
+              auto call = id(echo_pyramid_player).make_call();
+              call.set_volume(v);
+              call.perform();
+
+              id(current_volume) = v;
+
+
+
+aw87559:
+  id: audio_amp
+  i2c_id: atoms3r
+  address: 0x5B
+
+
+i2s_audio:
+  id: i2s_audio_bus
+  i2s_lrclk_pin: GPIO8
+  i2s_bclk_pin: GPIO6
+
+
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    i2c_id: atoms3r
+    address: 0x40
+    bits_per_sample: 16bit
+    sample_rate: 16000
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: atoms3r
+    address: 0x18
+    bits_per_sample: 16bit
+    sample_rate: 16000
+
+si5351:
+  id: clock_gen
+  i2c_id: atoms3r
+  address: 0x60
+
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO41
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Speaker Button"
+    id: speaker_button
+
+microphone:
+  - platform: i2s_audio
+    id: i2s_mic
+    i2s_din_pin: GPIO5
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: stereo
+
+
+speaker:
+  - platform: i2s_audio
+    id: pyramid_speaker
+    i2s_dout_pin: GPIO7
+    dac_type: external
+    audio_dac: es8311_dac
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    channel: mono
+
+
+media_player:
+  - platform: speaker
+    name: "Echo Pyramid Player"
+    id: echo_pyramid_player
+    volume_min: 20% 
+    volume_max: 100%
+    volume_initial: 30%
+    announcement_pipeline:
+      speaker: pyramid_speaker
+      format: FLAC
+      sample_rate: 16000
+      num_channels: 1
+

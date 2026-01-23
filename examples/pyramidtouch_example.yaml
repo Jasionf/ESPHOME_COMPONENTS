@@ -26,6 +26,13 @@ wifi:
     ssid: "pyramid-touch-demo"
     password: "12345678"
 
+# Track current volume locally (0.0–1.0)
+globals:
+  - id: current_volume
+    type: float
+    restore_value: true
+    initial_value: '0.3'
+
 # PyramidTouch: read STM32 touch and expose sensors
 sensor:
   - platform: pyramidtouch
@@ -44,6 +51,50 @@ sensor:
     swipe_event:
       name: "Touch Swipe Event"
       entity_category: diagnostic
+      on_value:
+        then:
+          - lambda: |-
+              // Swipe codes: 1=Left Up, 2=Left Down, 3=Right Up, 4=Right Down
+              const float step = 0.05f;  // 5% per gesture
+              float v = id(current_volume);
+              const int ev = (int) x;
+              if (ev == 1 || ev == 3) {
+                v = std::min(1.0f, v + step);
+              } else if (ev == 2 || ev == 4) {
+                v = std::max(0.0f, v - step);
+              } else {
+                return;  // ignore other values
+              }
+              id(echo_pyramid_player).set_volume(v);
+              id(current_volume) = v;
+
+# Minimal speaker + media_player to drive local volume
+i2s_audio:
+  id: i2s_audio_bus
+  i2s_lrclk_pin: 8
+  i2s_bclk_pin: 6
+
+speaker:
+  - platform: i2s_audio
+    id: pyramid_speaker
+    i2s_dout_pin: 7
+    dac_type: internal
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    channel: mono
+
+media_player:
+  - platform: speaker
+    name: "Echo Pyramid Player"
+    id: echo_pyramid_player
+    volume_min: 20%
+    volume_max: 100%
+    volume_initial: 30%
+    announcement_pipeline:
+      speaker: pyramid_speaker
+      format: FLAC
+      sample_rate: 16000
+      num_channels: 1
 
 # In Home Assistant you can automate on:
 # - Touch X == 1 to toggle lights
