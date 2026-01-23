@@ -1,0 +1,114 @@
+esphome:
+  name: echo-pyramid-rgb-test
+  friendly_name: Echo Pyramid RGB Test
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: DeepSpace9
+  password: huxiaochuan
+  ap:
+    ssid: "Echo-Pyramid Fallback Hotspot"
+    password: "uSTvJjVzweZp"
+
+external_components:
+  - source: github://Jasionf/echo-pyramid-components@main
+    components: [pyramidrgb]
+    refresh: 0s
+
+i2c:
+  - id: atoms3r
+    sda: GPIO38
+    scl: GPIO39
+    scan: true
+    frequency: 400kHz
+
+# 两个 PyramidRGB 实例，分别对应两条灯带（strip 1 / strip 2）
+pyramidrgb:
+  - id: pyramidrgb_1
+    i2c_id: atoms3r
+    address: 0x1A
+    strip: 1
+    brightness: 80
+
+  - id: pyramidrgb_2
+    i2c_id: atoms3r
+    address: 0x1A
+    strip: 2
+    brightness: 80
+
+# 四个通道（每通道声明三路输出：R/G/B）。通道0/1对应 pyramidrgb_1，通道2/3对应 pyramidrgb_2
+output:
+  # Channel 0 (strip 1, group 1)
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_1_r
+    pyramidrgb_id: pyramidrgb_1
+    channel: 0
+    color: red
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_1_g
+    pyramidrgb_id: pyramidrgb_1
+    channel: 0
+    color: green
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_1_b
+    pyramidrgb_id: pyramidrgb_1
+    channel: 0
+    color: blue
+
+  # Channel 1 (strip 1, group 2)
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_2_r
+    pyramidrgb_id: pyramidrgb_1
+    channel: 1
+    color: red
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_2_g
+    pyramidrgb_id: pyramidrgb_1
+    channel: 1
+    color: green
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_2_b
+    pyramidrgb_id: pyramidrgb_1
+    channel: 1
+    color: blue
+
+  # Channel 2 (strip 2, group 1)
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_3_r
+    pyramidrgb_id: pyramidrgb_2
+    channel: 2
+    color: red
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_3_g
+    pyramidrgb_id: pyramidrgb_2
+    channel: 2
+    color: green
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_3_b
+    pyramidrgb_id: pyramidrgb_2
+    channel: 2
+    color: blue
+
+  # Channel 3 (strip 2, group 2)
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_4_r
+    pyramidrgb_id: pyramidrgb_2
+    channel: 3
+    color: red
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_4_g
+    pyramidrgb_id: pyramidrgb_2
+    channel: 3
+    color: green
+  - platform: pyramidrgb
+    id: pyramidrgb_channel_4_b
+    pyramidrgb_id: pyramidrgb_2
+    channel: 3
+    color: blue

@@ -4,6 +4,7 @@ from esphome.components import i2c
 from esphome.const import CONF_ID
 
 DEPENDENCIES = ["i2c"]
+MULTI_CONF = True
 CODEOWNERS = ["@Jasionf"]
 
 CONF_PYRAMIDRGB_ID = "pyramidrgb_id"
