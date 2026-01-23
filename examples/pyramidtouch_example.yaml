@@ -1,0 +1,36 @@
+esphome:
+  name: pyramid-touch-demo
+  platform: ESP32
+  board: esp32-s3-devkitc-1
+
+i2c:
+  sda: 38
+  scl: 39
+  scan: true
+
+logger:
+  level: DEBUG
+
+# PyramidTouch: read STM32 touch and expose sensors
+sensor:
+  - platform: pyramidtouch
+    address: 0x1A
+    update_interval: 50ms
+    publish_swipe_event: true
+    swipe_timeout_ms: 500
+    touch1:
+      name: "Touch 1"
+    touch2:
+      name: "Touch 2"
+    touch3:
+      name: "Touch 3"
+    touch4:
+      name: "Touch 4"
+    swipe_event:
+      name: "Touch Swipe Event"
+      entity_category: diagnostic
+
+# Example: use numeric touch sensors for automations in HA
+# - Touch 1 == 1 -> turn on a light
+# - Swipe events:
+#   1=LEFT_UP, 2=LEFT_DOWN, 3=RIGHT_UP, 4=RIGHT_DOWN
