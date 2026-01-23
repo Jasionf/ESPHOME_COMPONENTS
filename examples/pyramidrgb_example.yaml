@@ -1,114 +1,133 @@
 esphome:
-  name: echo-pyramid-rgb-test
-  friendly_name: Echo Pyramid RGB Test
+	name: pyramidrgb-demo
 
 esp32:
-  board: esp32-s3-devkitc-1
-  framework:
-    type: esp-idf
+	board: esp32-s3-devkitc-1
+	framework:
+		type: esp-idf
 
 logger:
-  level: DEBUG
+	level: DEBUG
 
+api:
+ota:
 wifi:
-  ssid: DeepSpace9
-  password: huxiaochuan
-  ap:
-    ssid: "Echo-Pyramid Fallback Hotspot"
-    password: "uSTvJjVzweZp"
+	ssid: "<YOUR_WIFI_SSID>"
+	password: "<YOUR_WIFI_PASSWORD>"
 
 external_components:
-  - source: github://Jasionf/echo-pyramid-components@main
-    components: [pyramidrgb]
-    refresh: 0s
+	- source: local
 
 i2c:
-  - id: atoms3r
-    sda: GPIO38
-    scl: GPIO39
-    scan: true
-    frequency: 400kHz
+	sda: GPIO38
+	scl: GPIO39
+	scan: true
+	frequency: 400kHz
 
-# 两个 PyramidRGB 实例，分别对应两条灯带（strip 1 / strip 2）
+# Parent devices: per-strip config, including dimming and current mapping
 pyramidrgb:
-  - id: pyramidrgb_1
-    i2c_id: atoms3r
-    address: 0x1A
-    strip: 1
-    brightness: 80
+	- id: pyramid_rgb1
+		strip: 1
+		brightness: 100
+		initial_white: 0
 
-  - id: pyramidrgb_2
-    i2c_id: atoms3r
-    address: 0x1A
-    strip: 2
-    brightness: 80
+	- id: pyramid_rgb2
+		strip: 2
+		brightness: 100
+		initial_white: 0
 
-# 四个通道（每通道声明三路输出：R/G/B）。通道0/1对应 pyramidrgb_1，通道2/3对应 pyramidrgb_2
+# Child outputs: map each channel + color, using the parent’s mapping
 output:
-  # Channel 0 (strip 1, group 1)
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_1_r
-    pyramidrgb_id: pyramidrgb_1
-    channel: 0
-    color: red
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_1_g
-    pyramidrgb_id: pyramidrgb_1
-    channel: 0
-    color: green
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_1_b
-    pyramidrgb_id: pyramidrgb_1
-    channel: 0
-    color: blue
+	# Strip 1, Channel 0 (Group 1)
+	- platform: pyramidrgb
+		id: rgb1_ch0_red
+		pyramidrgb_id: pyramid_rgb1
+		channel: 0
+		color: red
+	- platform: pyramidrgb
+		id: rgb1_ch0_green
+		pyramidrgb_id: pyramid_rgb1
+		channel: 0
+		color: green
+	- platform: pyramidrgb
+		id: rgb1_ch0_blue
+		pyramidrgb_id: pyramid_rgb1
+		channel: 0
+		color: blue
 
-  # Channel 1 (strip 1, group 2)
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_2_r
-    pyramidrgb_id: pyramidrgb_1
-    channel: 1
-    color: red
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_2_g
-    pyramidrgb_id: pyramidrgb_1
-    channel: 1
-    color: green
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_2_b
-    pyramidrgb_id: pyramidrgb_1
-    channel: 1
-    color: blue
+	# Strip 1, Channel 1 (Group 2)
+	- platform: pyramidrgb
+		id: rgb1_ch1_red
+		pyramidrgb_id: pyramid_rgb1
+		channel: 1
+		color: red
+	- platform: pyramidrgb
+		id: rgb1_ch1_green
+		pyramidrgb_id: pyramid_rgb1
+		channel: 1
+		color: green
+	- platform: pyramidrgb
+		id: rgb1_ch1_blue
+		pyramidrgb_id: pyramid_rgb1
+		channel: 1
+		color: blue
 
-  # Channel 2 (strip 2, group 1)
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_3_r
-    pyramidrgb_id: pyramidrgb_2
-    channel: 2
-    color: red
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_3_g
-    pyramidrgb_id: pyramidrgb_2
-    channel: 2
-    color: green
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_3_b
-    pyramidrgb_id: pyramidrgb_2
-    channel: 2
-    color: blue
+	# Strip 2, Channel 2 (Group 1)
+	- platform: pyramidrgb
+		id: rgb2_ch2_red
+		pyramidrgb_id: pyramid_rgb2
+		channel: 2
+		color: red
+	- platform: pyramidrgb
+		id: rgb2_ch2_green
+		pyramidrgb_id: pyramid_rgb2
+		channel: 2
+		color: green
+	- platform: pyramidrgb
+		id: rgb2_ch2_blue
+		pyramidrgb_id: pyramid_rgb2
+		channel: 2
+		color: blue
 
-  # Channel 3 (strip 2, group 2)
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_4_r
-    pyramidrgb_id: pyramidrgb_2
-    channel: 3
-    color: red
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_4_g
-    pyramidrgb_id: pyramidrgb_2
-    channel: 3
-    color: green
-  - platform: pyramidrgb
-    id: pyramidrgb_channel_4_b
-    pyramidrgb_id: pyramidrgb_2
-    channel: 3
-    color: blue
+	# Strip 2, Channel 3 (Group 2)
+	- platform: pyramidrgb
+		id: rgb2_ch3_red
+		pyramidrgb_id: pyramid_rgb2
+		channel: 3
+		color: red
+	- platform: pyramidrgb
+		id: rgb2_ch3_green
+		pyramidrgb_id: pyramid_rgb2
+		channel: 3
+		color: green
+	- platform: pyramidrgb
+		id: rgb2_ch3_blue
+		pyramidrgb_id: pyramid_rgb2
+		channel: 3
+		color: blue
+
+# RGB lights combining outputs per group
+light:
+	- platform: rgb
+		name: "Strip1 Group1"
+		red: rgb1_ch0_red
+		green: rgb1_ch0_green
+		blue: rgb1_ch0_blue
+
+	- platform: rgb
+		name: "Strip1 Group2"
+		red: rgb1_ch1_red
+		green: rgb1_ch1_green
+		blue: rgb1_ch1_blue
+
+	- platform: rgb
+		name: "Strip2 Group1"
+		red: rgb2_ch2_red
+		green: rgb2_ch2_green
+		blue: rgb2_ch2_blue
+
+	- platform: rgb
+		name: "Strip2 Group2"
+		red: rgb2_ch3_red
+		green: rgb2_ch3_green
+		blue: rgb2_ch3_blue

@@ -11,7 +11,8 @@ void PyramidRGBComponent::setup() {
   if (!this->set_strip_brightness(initial_strip_, initial_brightness_)) {
     ESP_LOGW(TAG, "Failed to set initial brightness for strip %u", initial_strip_);
   }
-    initial_white_level_ = 255;
+  // Apply optional initial white level defined in parent
+  if (initial_white_level_ > 0) {
     uint8_t r = initial_white_level_;
     uint8_t g = initial_white_level_;
     uint8_t b = initial_white_level_;
@@ -22,6 +23,7 @@ void PyramidRGBComponent::setup() {
       this->set_channel_color(2, r, g, b);
       this->set_channel_color(3, r, g, b);
     }
+  }
 }
 
 void PyramidRGBComponent::dump_config() {
