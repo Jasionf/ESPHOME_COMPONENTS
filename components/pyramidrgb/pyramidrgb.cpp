@@ -1,4 +1,5 @@
 #include "pyramidrgb.h"
+#include "esphome/core/hal.h"
 
 namespace esphome {
 namespace pyramidrgb {
