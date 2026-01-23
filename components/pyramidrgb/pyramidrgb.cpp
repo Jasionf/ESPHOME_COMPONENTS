@@ -7,9 +7,7 @@ static const char *const TAG = "pyramidrgb";
 
 void PyramidRGBComponent::setup() {
   ESP_LOGI(TAG, "PyramidRGB init (STM32 RGB controller at 0x%02X)", this->address_);
-  // 此处不做强制探测，避免不同固件下读寄存器失败导致误判。
 
-  // 应用初始亮度（在 I2C 就绪后执行）
   if (!this->set_strip_brightness(initial_strip_, initial_brightness_)) {
     ESP_LOGW(TAG, "Failed to set initial brightness for strip %u", initial_strip_);
   }
@@ -29,6 +27,15 @@ void PyramidRGBComponent::setup() {
 void PyramidRGBComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "PyramidRGB Component");
   LOG_I2C_DEVICE(this);
+  ESP_LOGCONFIG(TAG, "strip=%u brightness=%u initial_white=%u", initial_strip_, initial_brightness_, initial_white_level_);
+  ESP_LOGCONFIG(TAG, "log_dimming=%s gamma=%.2f high_pwm_freq=%s power_save=%s internal_clk=%s",
+                logarithmic_dimming_ ? "true" : "false",
+                gamma_,
+                high_pwm_freq_ ? "true" : "false",
+                power_save_mode_ ? "true" : "false",
+                use_internal_clk_ ? "true" : "false");
+  ESP_LOGCONFIG(TAG, "ref_current=%.2f R=%.2f G=%.2f B=%.2f scales R=%.2f G=%.2f B=%.2f",
+                ref_current_, red_current_, green_current_, blue_current_, red_scale_, green_scale_, blue_scale_);
 }
 
 bool PyramidRGBComponent::set_strip_brightness(uint8_t strip, uint8_t brightness) {
@@ -103,6 +110,30 @@ bool PyramidRGBComponent::set_channel_color_component(uint8_t channel, RGBColorC
                            channel_colors_[channel][0],
                            channel_colors_[channel][1],
                            channel_colors_[channel][2]);
+}
+
+uint8_t PyramidRGBComponent::map_level(RGBColorChannel color, float level) const {
+  if (level <= 0.0f) return 0;
+  if (level >= 1.0f) level = 1.0f;
+  float x = level;
+  // Apply gamma/logarithmic dimming if enabled
+  float g = gamma_;
+  if (logarithmic_dimming_ && g > 0.0f && g != 1.0f) {
+    // Simple gamma curve
+    x = powf(x, g);
+  }
+  // Apply per-color scale based on configured nominal currents
+  float scale = 1.0f;
+  switch (color) {
+    case COLOR_R: scale = red_scale_; break;
+    case COLOR_G: scale = green_scale_; break;
+    case COLOR_B: scale = blue_scale_; break;
+    default: break;
+  }
+  x *= scale;
+  if (x > 1.0f) x = 1.0f;
+  if (x < 0.0f) x = 0.0f;
+  return (uint8_t) (x * 255.0f + 0.5f);
 }
 
 }  // namespace pyramidrgb

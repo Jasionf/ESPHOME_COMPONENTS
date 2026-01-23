@@ -13,7 +13,7 @@ class PyramidRGBOutput : public output::FloatOutput,
   void set_color(RGBColorChannel color) { color_ = color; }
 
   void write_state(float state) override {
-    uint8_t val = (uint8_t) (state <= 0 ? 0 : (state >= 1.0f ? 255 : (state * 255.0f)));
+    uint8_t val = this->parent_->map_level(this->color_, state);
     this->parent_->set_channel_color_component(this->channel_, this->color_, val);
   }
 
