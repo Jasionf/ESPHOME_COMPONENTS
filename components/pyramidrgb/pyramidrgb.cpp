@@ -13,17 +13,6 @@ void PyramidRGBComponent::setup() {
   if (!this->set_strip_brightness(initial_strip_, initial_brightness_)) {
     ESP_LOGW(TAG, "Failed to set initial brightness for strip %u", initial_strip_);
   }
-
-  // 若设置了非零亮度但未设置颜色，默认为该 strip 的两个通道填充低强度白色，便于肉眼观察
-  if (initial_brightness_ > 0) {
-    if (initial_strip_ == 1) {
-      this->set_channel_color(0, 16, 16, 16);
-      this->set_channel_color(1, 16, 16, 16);
-    } else if (initial_strip_ == 2) {
-      this->set_channel_color(2, 16, 16, 16);
-      this->set_channel_color(3, 16, 16, 16);
-    }
-  }
 }
 
 void PyramidRGBComponent::dump_config() {
@@ -71,21 +60,23 @@ bool PyramidRGBComponent::set_channel_color(uint8_t channel, uint8_t r, uint8_t 
   channel_colors_[channel][2] = b;
 
   // 每个 LED 4 字节：B, G, R, reserved（按硬件定义）
-  // 共写入 7 个 LED 的数据块（连续地址）
-  uint8_t buf[NUM_LEDS_PER_GROUP * 4];
-  for (uint8_t i = 0; i < NUM_LEDS_PER_GROUP; i++) {
-    // 通道 0 和 1 的 LED 顺序需要反转（0..6 -> 6..0），但由于一次性批量写入，硬件寄存器布局已按 LED 递增
-    // 这里直接统一填充颜色，硬件内部按 LED 索引递增写入
-    buf[i * 4 + 0] = b; // B
-    buf[i * 4 + 1] = g; // G
-    buf[i * 4 + 2] = r; // R
-    buf[i * 4 + 3] = 0x00; // reserved
-  }
+  // 逐 LED 写入，避免设备不支持连续自增写导致失败
   uint8_t base = channel_base_addr_(channel);
-  bool ok = write_color_block_(base, buf, sizeof(buf));
-  ESP_LOGD(TAG, "Set color: ch=%u base=0x%02X RGB=(%u,%u,%u) len=%u -> %s",
-           channel, base, r, g, b, (unsigned)sizeof(buf), ok ? "OK" : "FAIL");
-  return ok;
+  bool all_ok = true;
+  for (uint8_t i = 0; i < NUM_LEDS_PER_GROUP; i++) {
+    // 通道 0 和 1 的 LED 顺序需要反转（索引 0..6 -> 6..0）
+    uint8_t hardware_index = i;
+    if (channel == 0 || channel == 1) {
+      hardware_index = NUM_LEDS_PER_GROUP - 1 - i;
+    }
+    uint8_t reg = base + (hardware_index * 4);
+    uint8_t led_bytes[4] = {b, g, r, 0x00};
+    bool ok = write_color_block_(reg, led_bytes, sizeof(led_bytes));
+    ESP_LOGD(TAG, "Set color LED: ch=%u led=%u reg=0x%02X RGB=(%u,%u,%u) -> %s",
+             channel, i, reg, r, g, b, ok ? "OK" : "FAIL");
+    all_ok = all_ok && ok;
+  }
+  return all_ok;
 }
 
 bool PyramidRGBComponent::set_channel_color_component(uint8_t channel, RGBColorChannel color, uint8_t value) {
