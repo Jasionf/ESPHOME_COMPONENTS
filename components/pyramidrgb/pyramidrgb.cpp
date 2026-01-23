@@ -1,5 +1,4 @@
 #include "pyramidrgb.h"
-#include "esphome/core/hal.h"
 
 namespace esphome {
 namespace pyramidrgb {
@@ -14,15 +13,18 @@ void PyramidRGBComponent::setup() {
   if (!this->set_strip_brightness(initial_strip_, initial_brightness_)) {
     ESP_LOGW(TAG, "Failed to set initial brightness for strip %u", initial_strip_);
   }
-  // 亮度设置后稍作延时，确保设备就绪
-  delay(10);
-  // 初始化设置为彩色最亮：为该 strip 对应的两个通道设置不同的高亮颜色
-  if (initial_strip_ == 1) {
-    this->set_channel_color(0, 255, 0, 0);   // 通道0：红色满亮
-    this->set_channel_color(1, 0, 255, 0);   // 通道1：绿色满亮
-  } else if (initial_strip_ == 2) {
-    this->set_channel_color(2, 0, 0, 255);   // 通道2：蓝色满亮
-    this->set_channel_color(3, 255, 255, 0); // 通道3：黄色满亮
+  // 如果配置了初始白光强度，则为该 strip 对应的两个通道填充白光（逐 LED 写入）
+  if (initial_white_level_ > 0) {
+    uint8_t r = initial_white_level_;
+    uint8_t g = initial_white_level_;
+    uint8_t b = initial_white_level_;
+    if (initial_strip_ == 1) {
+      this->set_channel_color(0, r, g, b);
+      this->set_channel_color(1, r, g, b);
+    } else if (initial_strip_ == 2) {
+      this->set_channel_color(2, r, g, b);
+      this->set_channel_color(3, r, g, b);
+    }
   }
 }
 
@@ -46,8 +48,8 @@ uint8_t PyramidRGBComponent::channel_base_addr_(uint8_t channel) const {
   switch (channel) {
     case 0: return RGB_CH1_I1_COLOR_REG_ADDR; // Channel 0 -> 灯带1组1
     case 1: return RGB_CH2_I1_COLOR_REG_ADDR; // Channel 1 -> 灯带1组2
-    case 2: return RGB_CH3_I1_COLOR_REG_ADDR; // 修正映射：channel 2 -> CH3
-    case 3: return RGB_CH4_I1_COLOR_REG_ADDR; // 修正映射：channel 3 -> CH4
+    case 2: return RGB_CH4_I1_COLOR_REG_ADDR; // 设备映射：channel 2 -> CH4
+    case 3: return RGB_CH3_I1_COLOR_REG_ADDR; // 设备映射：channel 3 -> CH3
     default: return RGB_CH1_I1_COLOR_REG_ADDR;
   }
 }
