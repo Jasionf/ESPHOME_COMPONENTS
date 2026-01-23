@@ -1,0 +1,51 @@
+esphome:
+  name: echo-pyramid-mic-test
+  friendly_name: Echo-Pyramid Mic Test
+  
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG   
+  logs:
+    es7210_test: INFO
+    i2c: DEBUG
+
+wifi:
+  ssid: DeepSpace9
+  password: huxiaochuan
+  
+  ap:
+    ssid: "Echo-Pyramid Fallback Hotspot"
+    password: "uSTvJjVzweZp"
+
+i2c:
+  - id: atoms3r
+    sda: GPIO38
+    scl: GPIO39
+    scan: True
+    frequency: 400kHz
+
+# 麦克风测试组件
+es7210_test:
+  i2c_id: atoms3r
+  address: 0x40
+
+# 基础麦克风配置
+microphone:
+  - platform: i2s_audio
+    id: i2s_mic
+    i2s_din_pin: GPIO5
+    adc_type: external
+    pdm: true
+    sample_rate: 16000
+
+# 简单的日志组件用于调试
+logger:
+  level: DEBUG
+  logs:
+    component: INFO
+    es7210_test: INFO

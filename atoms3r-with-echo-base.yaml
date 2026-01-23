@@ -1,0 +1,122 @@
+esphome:
+  name: echo-pyramid
+  friendly_name: Echo-Pyramid
+  
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+
+# Enable logging
+logger:
+  level: DEBUG   
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "/Ic5szx8+gWlbthXuWg9cTq5RDkih1bl+vfhNfLDW2Q="
+
+ota:
+  - platform: esphome
+    password: "6cf9a68db5bb8db6e92a32723ef524cf"
+
+wifi:
+  ssid: DeepSpace9
+  password: huxiaochuan
+  
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Echo-Pyramid Fallback Hotspot"
+    password: "uSTvJjVzweZp"
+
+external_components:
+  - source: github://Jasionf/echo-pyramid-components@main
+    components: [aw87559,si5351]
+    refresh: 0s
+
+i2c:
+  - id: atoms3r
+    sda: GPIO38
+    scl: GPIO39
+    scan: True
+    frequency: 400kHz
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+captive_portal:
+
+aw87559:
+  id: audio_amp
+  i2c_id: atoms3r
+  address: 0x5B
+
+i2s_audio:
+  id: i2s_audio_bus
+  i2s_lrclk_pin: GPIO8
+  i2s_bclk_pin: GPIO6
+
+audio_adc:
+  - platform: es7210
+    i2c_id: atoms3r
+    address: 0x40
+    id: es7210_adc
+    bits_per_sample: 16bit
+    sample_rate: 16000 
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: atoms3r
+    address: 0x18
+    bits_per_sample: 32bit
+    sample_rate: 48000
+
+si5351:
+  id: clock_gen
+  i2c_id: atoms3r
+  address: 0x60
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO41
+      mode: INPUT_PULLUP   
+      inverted: True      
+    name: "Speaker Button"
+    id: speaker_button
+
+microphone:
+  - platform: i2s_audio
+    id: i2s_mic
+    i2s_din_pin: GPIO5
+    adc_type: external
+    pdm: true
+    sample_rate: 16000
+
+
+media_player:
+  - platform: speaker
+    name: "Echo Pyramid Player"
+    id: echo_pyramid_player
+    volume_min: 20% 
+    volume_max: 100%
+    volume_initial: 50%
+    announcement_pipeline:
+      speaker: pyramid_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+
+speaker:
+  - platform: i2s_audio
+    id: pyramid_speaker
+    i2s_dout_pin: GPIO7
+    dac_type: external
+    bits_per_sample: 32bit
+    audio_dac: es8311_dac
+    sample_rate: 48000
+    channel: left 
