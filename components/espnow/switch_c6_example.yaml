@@ -1,0 +1,99 @@
+esphome:
+  name: switchc6_sender
+  platform: ESP32
+  board: esp32dev
+
+# Keep it simple: run ESPNOW-only and fix channel explicitly
+logger:
+  level: DEBUG
+
+# No Wi-Fi configured → espnow requires an explicit channel
+espnow:
+  id: espnow1
+  channel: 1  # TODO: set to the receiver's channel
+  on_receive:
+    - lambda: |-
+        // Log inbound data as a string
+        std::string s(reinterpret_cast<const char *>(data), size);
+        ESP_LOGI("espnow", "recv from %02X:%02X:%02X:%02X:%02X:%02X size=%u data=%s",
+                 info.src_addr[0], info.src_addr[1], info.src_addr[2],
+                 info.src_addr[3], info.src_addr[4], info.src_addr[5],
+                 size, s.c_str());
+  on_broadcast:
+    - lambda: |-
+        std::string s(reinterpret_cast<const char *>(data), size);
+        ESP_LOGI("espnow", "broadcast size=%u data=%s", size, s.c_str());
+
+# Replace MAC_HYPHEN with your target short MAC in XXXX-XXXX-XXXX format
+# Update ch= to match espnow.channel above
+button:
+  - platform: template
+    name: "SwitchC6 ON"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1  # keep payload ch= in sync
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=1;ch=1"     # no trailing ';' → no reply expected
+  - platform: template
+    name: "SwitchC6 ON (ack)"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=1;ch=1;"    # trailing ';' → firmware replies
+  - platform: template
+    name: "SwitchC6 OFF"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=0;ch=1"
+  - platform: template
+    name: "SwitchC6 OFF (ack)"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=0;ch=1;"
+  - platform: template
+    name: "SwitchC6 Status?"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=?;ch=1;"
+  - platform: template
+    name: "SwitchC6 Version?"
+    on_press:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=V;ch=1;"
+
+# Optional: add a retry script with spacing ≥300 ms to avoid duplicate filter
+script:
+  - id: switch_on_retry
+    mode: single
+    then:
+      - espnow.set_channel:
+          id: espnow1
+          channel: 1
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=1;ch=1;"
+      - delay: 320ms
+      - espnow.broadcast:
+          id: espnow1
+          data: "MAC_HYPHEN=1;ch=1;"
