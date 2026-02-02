@@ -6,15 +6,15 @@ from esphome.const import CONF_ID
 DEPENDENCIES = ["i2c"]
 CODEOWNERS = ["@m5stack"]
 
-step16_ns = cg.esphome_ns.namespace("step16")
-Step16Component = step16_ns.class_("Step16Component", cg.Component, i2c.I2CDevice)
+unit_step16_ns = cg.esphome_ns.namespace("unit_step16")
+UnitStep16Component = unit_step16_ns.class_("UnitStep16Component", cg.Component, i2c.I2CDevice)
 
-CONF_STEP16_ID = "step16_id"
+CONF_UNIT_STEP16_ID = "unit_step16_id"
 
 CONFIG_SCHEMA = (
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(Step16Component),
+            cv.GenerateID(): cv.declare_id(UnitStep16Component),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)

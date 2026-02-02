@@ -5,7 +5,7 @@
 #include "esphome/components/i2c/i2c.h"
 
 namespace esphome {
-namespace step16 {
+namespace unit_step16 {
 
 // Register addresses
 static const uint8_t STEP16_VALUE_REG = 0x00;
@@ -22,7 +22,7 @@ static const uint8_t STEP16_SAVE_FLASH_REG = 0xF0;
 static const uint8_t STEP16_VERSION_REG = 0xFE;
 static const uint8_t STEP16_ADDRESS_REG = 0xFF;
 
-class Step16Component : public Component, public i2c::I2CDevice {
+class UnitStep16Component : public Component, public i2c::I2CDevice {
  public:
   void setup() override;
   void dump_config() override;
@@ -60,15 +60,15 @@ class Step16Component : public Component, public i2c::I2CDevice {
   bool write_register_(uint8_t reg_addr, uint8_t *data, uint8_t len);
 };
 
-class Step16Sensor : public sensor::Sensor, public PollingComponent {
+class UnitStep16Sensor : public sensor::Sensor, public PollingComponent {
  public:
-  void set_parent(Step16Component *parent) { this->parent_ = parent; }
+  void set_parent(UnitStep16Component *parent) { this->parent_ = parent; }
   void update() override;
   void dump_config() override;
 
  protected:
-  Step16Component *parent_;
+  UnitStep16Component *parent_;
 };
 
-}  // namespace step16
+}  // namespace unit_step16
 }  // namespace esphome
