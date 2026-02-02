@@ -27,15 +27,24 @@ class UnitStep16Output : public output::FloatOutput, public Component {
 
     // Convert 0.0-1.0 to appropriate range
     switch (channel_) {
-      case LED_BRIGHTNESS:
+      case LED_BRIGHTNESS: {
+        // Convert to 0-100
+        uint8_t brightness = static_cast<uint8_t>(state * 100.0f);
+        
+        // IMPORTANT: Enable LED display when setting brightness
+        // 0xFF = always on (according to source code)
+        parent_->set_led_config(0xFF);
+        parent_->set_led_brightness(brightness);
+        break;
+      }
       case RGB_BRIGHTNESS: {
         // Convert to 0-100
         uint8_t brightness = static_cast<uint8_t>(state * 100.0f);
-        if (channel_ == LED_BRIGHTNESS) {
-          parent_->set_led_brightness(brightness);
-        } else {
-          parent_->set_rgb_brightness(brightness);
-        }
+        
+        // IMPORTANT: Enable RGB when setting brightness
+        // 1 = on (according to source code)
+        parent_->set_rgb_config(1);
+        parent_->set_rgb_brightness(brightness);
         break;
       }
       case RGB_RED:
@@ -43,6 +52,9 @@ class UnitStep16Output : public output::FloatOutput, public Component {
       case RGB_BLUE: {
         // Convert to 0-255 and update the corresponding color component
         uint8_t value = static_cast<uint8_t>(state * 255.0f);
+        
+        // IMPORTANT: Enable RGB before setting color
+        parent_->set_rgb_config(1);
         
         // Get current RGB values
         uint8_t r, g, b;

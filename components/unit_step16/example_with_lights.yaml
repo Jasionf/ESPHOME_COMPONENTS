@@ -1,0 +1,145 @@
+esphome:
+  name: unit-step16-full
+  friendly_name: Unit Step16 Full Example
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "your-encryption-key"
+
+ota:
+  - platform: esphome
+    password: "your-ota-password"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  ap:
+    ssid: "Unit-Step16 Fallback Hotspot"
+    password: "12345678"
+
+captive_portal:
+
+# Load external component
+# Option 1: From GitHub (after you push the component)
+external_components:
+  - source: github://Jasionf/echo-pyramid-components@main
+    components: [unit_step16]
+    refresh: 0s
+
+# Option 2: From local path (for development)
+# external_components:
+#   - source:
+#       type: local
+#       path: /Users/jason/M5Unit-Step16/components
+#     components: [unit_step16]
+
+# I2C configuration
+i2c:
+  - id: bsp_iic
+    scl: GPIO32
+    sda: GPIO26
+    scan: true
+
+# Unit Step16 component with initial configuration
+unit_step16:
+  id: my_step16
+  i2c_id: bsp_iic
+  address: 0x48
+  # Initial LED configuration
+  led_brightness: 50      # LED brightness 0-100%
+  led_enabled: true       # Enable LED display on boot
+  # Initial RGB configuration
+  rgb_brightness: 50      # RGB brightness 0-100%
+  rgb_enabled: true       # Enable RGB LED on boot
+  rgb_red: 0              # Initial red value 0-255
+  rgb_green: 255          # Initial green value 0-255
+  rgb_blue: 0             # Initial blue value 0-255 (default: green)
+
+# Sensor to read encoder value (0-15)
+sensor:
+  - platform: unit_step16
+    unit_step16_id: my_step16
+    name: "Encoder Value"
+    update_interval: 100ms
+    on_value:
+      then:
+        - logger.log:
+            format: "Encoder value changed to: %.0f"
+            args: [ 'x' ]
+
+# Output components for LED and RGB control
+output:
+  # LED brightness control (0-100%)
+  - platform: unit_step16
+    id: led_brightness_output
+    unit_step16_id: my_step16
+    channel: led_brightness
+  
+  # RGB brightness control (0-100%)
+  - platform: unit_step16
+    id: rgb_brightness_output
+    unit_step16_id: my_step16
+    channel: rgb_brightness
+  
+  # RGB color channels (0-255 each)
+  - platform: unit_step16
+    id: rgb_red_output
+    unit_step16_id: my_step16
+    channel: rgb_red
+  
+  - platform: unit_step16
+    id: rgb_green_output
+    unit_step16_id: my_step16
+    channel: rgb_green
+  
+  - platform: unit_step16
+    id: rgb_blue_output
+    unit_step16_id: my_step16
+    channel: rgb_blue
+
+# Create a light entity for RGB control
+light:
+  - platform: rgb
+    name: "Step16 RGB Light"
+    red: rgb_red_output
+    green: rgb_green_output
+    blue: rgb_blue_output
+    # Optional: add effects
+    effects:
+      - pulse:
+      - strobe:
+      - random:
+
+# Create a light entity for LED brightness (monochrome)
+  - platform: monochromatic
+    name: "Step16 LED Display"
+    output: led_brightness_output
+    # Optional: add effects
+    effects:
+      - pulse:
+      - strobe:
+
+# Optional: Control RGB brightness separately as a number
+number:
+  - platform: template
+    name: "RGB Brightness"
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    initial_value: 50
+    on_value:
+      then:
+        - output.set_level:
+            id: rgb_brightness_output
+            level: !lambda 'return x / 100.0;'
