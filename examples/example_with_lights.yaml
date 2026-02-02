@@ -29,6 +29,20 @@ wifi:
 
 captive_portal:
 
+# Load external component
+# Option 1: From GitHub (after you push the component)
+external_components:
+  - source: github://Jasionf/echo-pyramid-components@main
+    components: [unit_step16]
+    refresh: 0s
+
+# Option 2: From local path (for development)
+# external_components:
+#   - source:
+#       type: local
+#       path: /Users/jason/M5Unit-Step16/components
+#     components: [unit_step16]
+
 # I2C configuration
 i2c:
   - id: bsp_iic
@@ -36,11 +50,20 @@ i2c:
     sda: GPIO26
     scan: true
 
-# Unit Step16 component
+# Unit Step16 component with initial configuration
 unit_step16:
   id: my_step16
   i2c_id: bsp_iic
   address: 0x48
+  # Initial LED configuration
+  led_brightness: 50      # LED brightness 0-100%
+  led_enabled: true       # Enable LED display on boot
+  # Initial RGB configuration
+  rgb_brightness: 50      # RGB brightness 0-100%
+  rgb_enabled: true       # Enable RGB LED on boot
+  rgb_red: 0              # Initial red value 0-255
+  rgb_green: 255          # Initial green value 0-255
+  rgb_blue: 0             # Initial blue value 0-255 (default: green)
 
 # Sensor to read encoder value (0-15)
 sensor:
@@ -120,21 +143,3 @@ number:
         - output.set_level:
             id: rgb_brightness_output
             level: !lambda 'return x / 100.0;'
-
-# Optional: Example automation - change RGB color based on encoder position
-# This creates a color wheel effect
-on_boot:
-  - priority: -100
-    then:
-      - logger.log: "Unit Step16 initialized"
-      # Turn on LED display
-      - light.turn_on:
-          id: step16_led_display
-          brightness: 50%
-      # Turn on RGB with initial color
-      - light.turn_on:
-          id: step16_rgb_light
-          brightness: 50%
-          red: 0%
-          green: 100%
-          blue: 0%

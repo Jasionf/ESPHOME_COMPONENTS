@@ -19,6 +19,32 @@ void UnitStep16Component::setup() {
   
   uint8_t version = this->get_version();
   ESP_LOGD(TAG, "Unit Step16 firmware version: 0x%02X", version);
+  
+  // Apply initial configuration
+  ESP_LOGD(TAG, "Applying initial configuration...");
+  
+  // Configure LED
+  if (this->initial_led_enabled_) {
+    this->set_led_config(0xFF);  // Always on
+    this->set_led_brightness(this->initial_led_brightness_);
+    ESP_LOGD(TAG, "LED enabled with brightness: %d%%", this->initial_led_brightness_);
+  } else {
+    this->set_led_config(0x00);  // Off
+    ESP_LOGD(TAG, "LED disabled");
+  }
+  
+  // Configure RGB
+  if (this->initial_rgb_enabled_) {
+    this->set_rgb_config(1);  // On
+    this->set_rgb_brightness(this->initial_rgb_brightness_);
+    this->set_rgb(this->initial_rgb_r_, this->initial_rgb_g_, this->initial_rgb_b_);
+    ESP_LOGD(TAG, "RGB enabled: brightness=%d%%, color=(%d,%d,%d)", 
+             this->initial_rgb_brightness_, 
+             this->initial_rgb_r_, this->initial_rgb_g_, this->initial_rgb_b_);
+  } else {
+    this->set_rgb_config(0);  // Off
+    ESP_LOGD(TAG, "RGB disabled");
+  }
 }
 
 void UnitStep16Component::dump_config() {
