@@ -1,10 +1,13 @@
 #pragma once
 
 #include "esphome/components/output/float_output.h"
+#include "esphome/core/log.h"
 #include "../unit_step16_sensor.h"
 
 namespace esphome {
 namespace unit_step16 {
+
+static const char *const TAG_OUTPUT = "unit_step16.output";
 
 // Output channel enumeration
 enum OutputChannel {
@@ -22,8 +25,11 @@ class UnitStep16Output : public output::FloatOutput, public Component {
 
   void write_state(float state) override {
     if (parent_ == nullptr) {
+      ESP_LOGW(TAG_OUTPUT, "Parent is null!");
       return;
     }
+
+    ESP_LOGD(TAG_OUTPUT, "Channel %d: write_state(%.2f)", channel_, state);
 
     // Convert 0.0-1.0 to appropriate range
     switch (channel_) {
@@ -31,20 +37,32 @@ class UnitStep16Output : public output::FloatOutput, public Component {
         // Convert to 0-100
         uint8_t brightness = static_cast<uint8_t>(state * 100.0f);
         
+        ESP_LOGD(TAG_OUTPUT, "Setting LED: config=0xFF, brightness=%d", brightness);
+        
         // IMPORTANT: Enable LED display when setting brightness
         // 0xFF = always on (according to source code)
-        parent_->set_led_config(0xFF);
-        parent_->set_led_brightness(brightness);
+        if (!parent_->set_led_config(0xFF)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set LED config");
+        }
+        if (!parent_->set_led_brightness(brightness)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set LED brightness");
+        }
         break;
       }
       case RGB_BRIGHTNESS: {
         // Convert to 0-100
         uint8_t brightness = static_cast<uint8_t>(state * 100.0f);
         
+        ESP_LOGD(TAG_OUTPUT, "Setting RGB brightness: config=1, brightness=%d", brightness);
+        
         // IMPORTANT: Enable RGB when setting brightness
         // 1 = on (according to source code)
-        parent_->set_rgb_config(1);
-        parent_->set_rgb_brightness(brightness);
+        if (!parent_->set_rgb_config(1)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set RGB config");
+        }
+        if (!parent_->set_rgb_brightness(brightness)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set RGB brightness");
+        }
         break;
       }
       case RGB_RED:
@@ -54,11 +72,14 @@ class UnitStep16Output : public output::FloatOutput, public Component {
         uint8_t value = static_cast<uint8_t>(state * 255.0f);
         
         // IMPORTANT: Enable RGB before setting color
-        parent_->set_rgb_config(1);
+        if (!parent_->set_rgb_config(1)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set RGB config for color");
+        }
         
         // Get current RGB values
         uint8_t r, g, b;
         if (!parent_->get_rgb(&r, &g, &b)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to get current RGB, using defaults");
           r = g = b = 0;
         }
         
@@ -71,8 +92,12 @@ class UnitStep16Output : public output::FloatOutput, public Component {
           b = value;
         }
         
+        ESP_LOGD(TAG_OUTPUT, "Setting RGB color: R=%d, G=%d, B=%d", r, g, b);
+        
         // Write back all three values
-        parent_->set_rgb(r, g, b);
+        if (!parent_->set_rgb(r, g, b)) {
+          ESP_LOGW(TAG_OUTPUT, "Failed to set RGB color");
+        }
         break;
       }
     }
