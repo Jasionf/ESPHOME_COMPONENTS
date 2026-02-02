@@ -8,6 +8,7 @@ CODEOWNERS = ["@m5stack"]
 
 unit_step16_ns = cg.esphome_ns.namespace("unit_step16")
 UnitStep16Component = unit_step16_ns.class_("UnitStep16Component", cg.Component, i2c.I2CDevice)
+OutputChannel = unit_step16_ns.enum("OutputChannel", is_class=True)
 
 CONF_UNIT_STEP16_ID = "unit_step16_id"
 
