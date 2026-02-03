@@ -38,7 +38,7 @@ switch:
     name: "客厅灯开关"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
-    device_id: "142B-2F9F-8704"
+    response_token: "142B-2F9F-8704"
 ```
 
 ### 多设备配置
@@ -54,7 +54,7 @@ switch:
     name: "客厅灯"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
-    device_id: "142B-2F9F-8704"
+    response_token: "142B-2F9F-8704"
     retry_count: 40
     retry_interval: 100
   
@@ -63,7 +63,7 @@ switch:
     name: "卧室灯"
     espnow_id: espnow1
     mac_address: "AA:BB:CC:DD:EE:FF"
-    device_id: "1234-5678-9ABC"
+    response_token: "1234-5678-9ABC"
     retry_count: 30
     retry_interval: 150
   
@@ -72,7 +72,7 @@ switch:
     name: "厨房插座"
     espnow_id: espnow1
     mac_address: "11:22:33:44:55:66"
-    device_id: "ABCD-EFGH-IJKL"
+    response_token: "ABCD-EFGH-IJKL"
 ```
 
 ## 配置选项
@@ -82,7 +82,7 @@ switch:
 | `name` | string | 是 | - | 开关的名称 |
 | `espnow_id` | id | 是 | - | ESPNow 组件的 ID |
 | `mac_address` | string | 是 | - | 目标设备的 MAC 地址（格式：AA:BB:CC:DD:EE:FF） |
-| `device_id` | string | 是 | - | 设备的唯一标识符（用于确认响应） |
+| `response_token` | string | 是 | - | 与远端设备响应匹配的令牌（用于确认响应） |
 | `retry_count` | int | 否 | 40 | 发送命令的最大重试次数（1-100） |
 | `retry_interval` | int | 否 | 100 | 每次重试之间的间隔时间（毫秒，10-5000） |
 
@@ -90,7 +90,7 @@ switch:
 
 1. **发送命令**: 当开关状态改变时，组件会构造一个包含 MAC 地址、命令和 WiFi 信道信息的消息
 2. **自动重试**: 如果没有收到响应确认，组件会自动重试发送命令
-3. **响应确认**: 远程设备收到命令后，会发送包含 `device_id` 的广播消息作为确认
+3. **响应确认**: 远程设备收到命令后，会发送包含 `response_token` 的广播消息作为确认
 4. **停止重试**: 一旦收到确认响应，组件会停止重试
 
 ## 消息格式
@@ -104,7 +104,7 @@ B43A-4581-EC70=1;ch=6;
 - `ch=`：当前 WiFi 信道
 
 ### 响应格式
-远程设备应在响应消息中包含 `device_id`，例如：
+远程设备应在响应消息中包含 `response_token`，例如：
 ```
 142B-2F9F-8704
 ```
@@ -169,7 +169,7 @@ switch:
     name: "SwitchC6"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
-    device_id: "142B-2F9F-8704"
+    response_token: "142B-2F9F-8704"
 ```
 
 ## 调试
@@ -189,7 +189,7 @@ logger:
 ## 注意事项
 
 - 确保 `mac_address` 格式正确（使用冒号或短横线分隔）
-- `device_id` 必须与远程设备返回的标识符匹配
+- `response_token` 必须与远程设备返回的标识符匹配
 - ESP-NOW 依赖 WiFi，但不需要连接到路由器
 - 如果设备距离太远，可能需要增加 `retry_count`
 

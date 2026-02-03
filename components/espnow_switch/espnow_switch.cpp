@@ -10,14 +10,7 @@ static const char *const TAG = "espnow_switch";
 
 void ESPNowSwitch::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESPNow Switch...");
-  
-  // 注册广播消息回调，用于接收设备响应
-  if (this->espnow_ != nullptr) {
-    this->espnow_->add_on_broadcast_callback([this](const uint8_t *addr, const uint8_t *data, size_t len, 
-                                                    const espnow::ESPNowPacketInfo *info) {
-      this->on_espnow_broadcast(data, len);
-    });
-  }
+  // 无需在 C++ 层注册广播回调；依赖乐观状态与重试发送
 }
 
 void ESPNowSwitch::dump_config() {
@@ -26,7 +19,7 @@ void ESPNowSwitch::dump_config() {
   ESP_LOGCONFIG(TAG, "  MAC Address: %02X:%02X:%02X:%02X:%02X:%02X", 
                 this->mac_address_[0], this->mac_address_[1], this->mac_address_[2],
                 this->mac_address_[3], this->mac_address_[4], this->mac_address_[5]);
-  ESP_LOGCONFIG(TAG, "  Device ID: %s", this->device_id_.c_str());
+  ESP_LOGCONFIG(TAG, "  Response Token: %s", this->response_token_.c_str());
   ESP_LOGCONFIG(TAG, "  Retry Count: %d", this->retry_count_);
   ESP_LOGCONFIG(TAG, "  Retry Interval: %dms", this->retry_interval_);
 }
