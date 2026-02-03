@@ -35,6 +35,8 @@ class ESPNowSwitch : public switch_::Switch, public Component {
   
   // 接收响应的回调
   void on_espnow_broadcast(const uint8_t *data, size_t len);
+  // 供 YAML on_broadcast 调用以停止重试
+  void handle_broadcast(const uint8_t *data, size_t len) { this->on_espnow_broadcast(data, len); }
 
  protected:
   void write_state(bool state) override;

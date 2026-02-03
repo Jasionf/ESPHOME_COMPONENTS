@@ -24,8 +24,8 @@ CONFIG_SCHEMA = (
             cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(espnow.ESPNowComponent),
             cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
             cv.Required(CONF_RESPONSE_TOKEN): cv.string,
-            cv.Optional(CONF_RETRY_COUNT, default=20): cv.int_range(min=1, max=100),
-            cv.Optional(CONF_RETRY_INTERVAL, default=250): cv.int_range(min=10, max=5000),
+            cv.Optional(CONF_RETRY_COUNT, default=15): cv.int_range(min=1, max=100),
+            cv.Optional(CONF_RETRY_INTERVAL, default=150): cv.int_range(min=10, max=5000),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
