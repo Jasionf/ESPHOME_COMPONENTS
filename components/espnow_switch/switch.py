@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import switch
 from esphome.const import CONF_ID
+from .espnow import ESPNowComponent
 from . import (
     espnow_switch_ns,
     CONF_ESPNOW_ID,
@@ -37,7 +38,7 @@ def validate_mac_address(value):
 
 CONFIG_SCHEMA = switch.switch_schema(ESPNowSwitch).extend(
     {
-        cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(cg.Component),
+        cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(ESPNowComponent),
         cv.Required(CONF_MAC_ADDRESS): validate_mac_address,
         cv.Required(CONF_DEVICE_ID): cv.string,
         cv.Optional(CONF_RETRY_COUNT, default=40): cv.int_range(min=1, max=100),
@@ -68,4 +69,5 @@ async def to_code(config):
     # 设置重试参数
     cg.add(var.set_retry_count(config[CONF_RETRY_COUNT]))
     cg.add(var.set_retry_interval(config[CONF_RETRY_INTERVAL]))
+
 
