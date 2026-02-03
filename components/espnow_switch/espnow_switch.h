@@ -54,6 +54,9 @@ class ESPNowSwitch : public switch_::Switch, public Component {
   bool pending_send_{false};
   uint8_t attempts_sent_{0};
   uint32_t last_send_ms_{0};
+
+  // Throttle: only one send in-flight at a time (callback clears)
+  bool send_in_flight_{false};
 };
 
 }  // namespace espnow_switch

@@ -34,15 +34,21 @@ void ESPNowSwitch::write_state(bool state) {
   this->response_received_ = false;
   this->attempts_sent_ = 0;
   this->pending_send_ = true;
+  this->send_in_flight_ = false;
+  this->last_send_ms_ = 0;
+  // 立即尝试发送一次（后续重试由 loop() 节流）
   this->send_command_(cmd);
-  this->last_send_ms_ = millis();
 
   // 发布状态（乐观模式）
   this->publish_state(state);
 }
 
 void ESPNowSwitch::send_command_(const std::string &cmd) {
-  // 单次发送，不阻塞
+  // 单次发送，不阻塞；使用回调节流（只允许一个 in-flight）
+  if (this->send_in_flight_) {
+    return;
+  }
+
   // 获取当前 WiFi 信道
   int channel = this->espnow_->get_wifi_channel();
 
@@ -54,17 +60,26 @@ void ESPNowSwitch::send_command_(const std::string &cmd) {
            this->mac_address_[4], this->mac_address_[5],
            cmd.c_str(), channel);
 
-  // 转换为 vector
-  std::vector<uint8_t> payload(data, data + strlen(data));
-
-  // 发送 ESPNow 消息
-  esp_err_t result = this->espnow_->send(this->mac_address_, payload, nullptr);
+  // 发送 ESPNow 消息（避免每次重试都分配 vector，减少 heap 压力）
+  this->send_in_flight_ = true;
+  this->last_send_ms_ = millis();
   this->attempts_sent_++;
+  const size_t payload_len = strlen(data);
 
-  if (result == ESP_OK) {
-    ESP_LOGV(TAG, "ESPNow message sent (attempt %d/%d): %s", this->attempts_sent_, this->retry_count_, data);
-  } else {
-    ESP_LOGW(TAG, "Failed to send ESPNow message (attempt %d/%d)", this->attempts_sent_, this->retry_count_);
+  auto cb = [this, data_str = std::string(data)](esp_err_t status) {
+    this->send_in_flight_ = false;
+    if (status == ESP_OK) {
+      ESP_LOGV(TAG, "ESPNow message sent (attempt %d/%d): %s", this->attempts_sent_, this->retry_count_, data_str.c_str());
+    } else {
+      ESP_LOGW(TAG, "Failed to send ESPNow message (attempt %d/%d): %s", this->attempts_sent_, this->retry_count_, esp_err_to_name(status));
+    }
+  };
+
+  esp_err_t result = this->espnow_->send(this->mac_address_, (const uint8_t *) data, payload_len, cb);
+  if (result != ESP_OK) {
+    // send() 没有入队成功，回调不会触发，手动释放 in-flight
+    this->send_in_flight_ = false;
+    ESP_LOGW(TAG, "ESPNow send() failed immediately (attempt %d/%d): %s", this->attempts_sent_, this->retry_count_, esp_err_to_name(result));
   }
 }
 
@@ -92,11 +107,14 @@ void ESPNowSwitch::loop() {
     this->pending_send_ = false;
     return;
   }
+  // 若上一次发送仍在进行，等待回调释放
+  if (this->send_in_flight_) {
+    return;
+  }
   // 间隔到达后再重试
   uint32_t now = millis();
-  if (now - this->last_send_ms_ >= this->retry_interval_) {
+  if (this->last_send_ms_ == 0 || now - this->last_send_ms_ >= this->retry_interval_) {
     this->send_command_(this->current_command_);
-    this->last_send_ms_ = now;
   }
 }
 

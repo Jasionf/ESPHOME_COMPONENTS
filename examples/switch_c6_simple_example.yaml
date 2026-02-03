@@ -36,6 +36,8 @@ captive_portal:
 espnow:
   id: espnow1
   auto_add_peer: true
+  peers:
+    - B4:3A:45:81:EC:70
   on_broadcast:
     - lambda: |-
         // 将广播的数据传递给组件用于停止重试
