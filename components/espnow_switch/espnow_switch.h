@@ -12,6 +12,7 @@ class ESPNowSwitch : public switch_::Switch, public Component {
  public:
   void setup() override;
   void dump_config() override;
+  void loop() override;
   
   // 设置 ESPNow 组件引用
   void set_espnow_component(espnow::ESPNowComponent *espnow) { this->espnow_ = espnow; }
@@ -50,6 +51,9 @@ class ESPNowSwitch : public switch_::Switch, public Component {
   
   bool response_received_{false};
   std::string current_command_;
+  bool pending_send_{false};
+  uint8_t attempts_sent_{0};
+  uint32_t last_send_ms_{0};
 };
 
 }  // namespace espnow_switch

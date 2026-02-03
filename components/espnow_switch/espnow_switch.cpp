@@ -30,59 +30,41 @@ void ESPNowSwitch::write_state(bool state) {
   // 设置命令：1 = ON, 0 = OFF
   std::string cmd = state ? "1" : "0";
   this->current_command_ = cmd;
-  
-  // 发送命令
+  // 初始化重试状态（非阻塞）
+  this->response_received_ = false;
+  this->attempts_sent_ = 0;
+  this->pending_send_ = true;
   this->send_command_(cmd);
-  
+  this->last_send_ms_ = millis();
+
   // 发布状态（乐观模式）
   this->publish_state(state);
 }
 
 void ESPNowSwitch::send_command_(const std::string &cmd) {
-  this->response_received_ = false;
-  
-  // 重试发送命令
-  for (uint8_t i = 0; i < this->retry_count_; i++) {
-    if (this->response_received_) {
-      ESP_LOGI(TAG, "Response confirmed, stopping retries");
-      break;
-    }
-    
-    // 获取当前 WiFi 信道
-    int channel = this->espnow_->get_wifi_channel();
-    
-    // 构建消息格式: MAC-ADDRESS=CMD;ch=CHANNEL;
-    char data[64];
-    snprintf(data, sizeof(data), "%02X%02X-%02X%02X-%02X%02X=%s;ch=%d;",
-             this->mac_address_[0], this->mac_address_[1],
-             this->mac_address_[2], this->mac_address_[3],
-             this->mac_address_[4], this->mac_address_[5],
-             cmd.c_str(), channel);
-    
-    // 转换为 vector
-    std::vector<uint8_t> payload(data, data + strlen(data));
-    
-    // 发送 ESPNow 消息
-    esp_err_t result = this->espnow_->send(this->mac_address_, payload, nullptr);
-    
-    if (result == ESP_OK) {
-      ESP_LOGV(TAG, "ESPNow message sent (attempt %d/%d): %s", i + 1, this->retry_count_, data);
-      // 给予底层发送线程调度机会，避免池耗尽
-      delay(20);
-    } else {
-      ESP_LOGW(TAG, "Failed to send ESPNow message (attempt %d/%d)", i + 1, this->retry_count_);
-      // 分配失败时退避更久，给发送缓冲释放时间
-      delay(this->retry_interval_ > 250 ? this->retry_interval_ : 250);
-    }
-    
-    // 等待一段时间后重试
-    if (i < this->retry_count_ - 1) {
-      delay(this->retry_interval_);
-    }
-  }
-  
-  if (!this->response_received_) {
-    ESP_LOGW(TAG, "No response received after %d attempts", this->retry_count_);
+  // 单次发送，不阻塞
+  // 获取当前 WiFi 信道
+  int channel = this->espnow_->get_wifi_channel();
+
+  // 构建消息格式: MAC-ADDRESS=CMD;ch=CHANNEL;
+  char data[64];
+  snprintf(data, sizeof(data), "%02X%02X-%02X%02X-%02X%02X=%s;ch=%d;",
+           this->mac_address_[0], this->mac_address_[1],
+           this->mac_address_[2], this->mac_address_[3],
+           this->mac_address_[4], this->mac_address_[5],
+           cmd.c_str(), channel);
+
+  // 转换为 vector
+  std::vector<uint8_t> payload(data, data + strlen(data));
+
+  // 发送 ESPNow 消息
+  esp_err_t result = this->espnow_->send(this->mac_address_, payload, nullptr);
+  this->attempts_sent_++;
+
+  if (result == ESP_OK) {
+    ESP_LOGV(TAG, "ESPNow message sent (attempt %d/%d): %s", this->attempts_sent_, this->retry_count_, data);
+  } else {
+    ESP_LOGW(TAG, "Failed to send ESPNow message (attempt %d/%d)", this->attempts_sent_, this->retry_count_);
   }
 }
 
@@ -94,6 +76,27 @@ void ESPNowSwitch::on_espnow_broadcast(const uint8_t *data, size_t len) {
   if (response.find(this->response_token_) != std::string::npos) {
     ESP_LOGI(TAG, "Response received (matched token): %s", this->response_token_.c_str());
     this->response_received_ = true;
+    this->pending_send_ = false;
+  }
+}
+
+void ESPNowSwitch::loop() {
+  if (!this->pending_send_)
+    return;
+  if (this->response_received_) {
+    this->pending_send_ = false;
+    return;
+  }
+  if (this->attempts_sent_ >= this->retry_count_) {
+    ESP_LOGW(TAG, "No response received after %d attempts", this->retry_count_);
+    this->pending_send_ = false;
+    return;
+  }
+  // 间隔到达后再重试
+  uint32_t now = millis();
+  if (now - this->last_send_ms_ >= this->retry_interval_) {
+    this->send_command_(this->current_command_);
+    this->last_send_ms_ = now;
   }
 }
 
