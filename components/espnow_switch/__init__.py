@@ -1,8 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import switch, espnow
-from esphome.const import CONF_ID, CONF_NAME
-from esphome import automation
+from esphome.const import CONF_ID
 
 DEPENDENCIES = ["espnow"]
 CODEOWNERS = ["@jason"]
@@ -33,14 +32,19 @@ def validate_mac_address(value):
     
     return value.upper().replace("-", ":")
 
-CONFIG_SCHEMA = switch.SWITCH_SCHEMA.extend({
-    cv.GenerateID(): cv.declare_id(ESPNowSwitch),
-    cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(espnow.ESPNowComponent),
-    cv.Required(CONF_MAC_ADDRESS): validate_mac_address,
-    cv.Required(CONF_DEVICE_ID): cv.string,
-    cv.Optional(CONF_RETRY_COUNT, default=40): cv.int_range(min=1, max=100),
-    cv.Optional(CONF_RETRY_INTERVAL, default=100): cv.int_range(min=10, max=5000),
-}).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = (
+    switch.switch_schema(ESPNowSwitch)
+    .extend(
+        {
+            cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(espnow.ESPNowComponent),
+            cv.Required(CONF_MAC_ADDRESS): validate_mac_address,
+            cv.Required(CONF_DEVICE_ID): cv.string,
+            cv.Optional(CONF_RETRY_COUNT, default=40): cv.int_range(min=1, max=100),
+            cv.Optional(CONF_RETRY_INTERVAL, default=100): cv.int_range(min=10, max=5000),
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+)
 
 
 async def to_code(config):
