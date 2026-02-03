@@ -67,8 +67,12 @@ void ESPNowSwitch::send_command_(const std::string &cmd) {
     
     if (result == ESP_OK) {
       ESP_LOGV(TAG, "ESPNow message sent (attempt %d/%d): %s", i + 1, this->retry_count_, data);
+      // 给予底层发送线程调度机会，避免池耗尽
+      delay(20);
     } else {
       ESP_LOGW(TAG, "Failed to send ESPNow message (attempt %d/%d)", i + 1, this->retry_count_);
+      // 分配失败时退避更久，给发送缓冲释放时间
+      delay(this->retry_interval_ > 250 ? this->retry_interval_ : 250);
     }
     
     // 等待一段时间后重试
