@@ -6,7 +6,7 @@ from . import (
     espnow_switch_ns,
     CONF_ESPNOW_ID,
     CONF_MAC_ADDRESS,
-    CONF_DEVICE_ID,
+    CONF_RESPONSE_TOKEN,
     CONF_RETRY_COUNT,
     CONF_RETRY_INTERVAL,
 )
@@ -23,7 +23,7 @@ CONFIG_SCHEMA = (
         {
             cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(espnow.ESPNowComponent),
             cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
-            cv.Required(CONF_DEVICE_ID): cv.string,
+            cv.Required(CONF_RESPONSE_TOKEN): cv.string,
             cv.Optional(CONF_RETRY_COUNT, default=40): cv.int_range(min=1, max=100),
             cv.Optional(CONF_RETRY_INTERVAL, default=100): cv.int_range(min=10, max=5000),
         }
@@ -45,8 +45,8 @@ async def to_code(config):
     mac = config[CONF_MAC_ADDRESS]
     cg.add(var.set_mac_address(mac.parts[0], mac.parts[1], mac.parts[2], mac.parts[3], mac.parts[4], mac.parts[5]))
     
-    # 设置设备 ID
-    cg.add(var.set_device_id(config[CONF_DEVICE_ID]))
+    # 设置响应匹配令牌
+    cg.add(var.set_response_token(config[CONF_RESPONSE_TOKEN]))
     
     # 设置重试参数
     cg.add(var.set_retry_count(config[CONF_RETRY_COUNT]))

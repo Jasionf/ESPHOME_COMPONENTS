@@ -9,6 +9,6 @@ espnow_switch_ns = cg.esphome_ns.namespace("espnow_switch")
 # 常量定义
 CONF_ESPNOW_ID = "espnow_id"
 CONF_MAC_ADDRESS = "mac_address"
-CONF_DEVICE_ID = "device_id"
+CONF_RESPONSE_TOKEN = "response_token"
 CONF_RETRY_COUNT = "retry_count"
 CONF_RETRY_INTERVAL = "retry_interval"

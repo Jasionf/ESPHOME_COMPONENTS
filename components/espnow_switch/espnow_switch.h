@@ -26,8 +26,8 @@ class ESPNowSwitch : public switch_::Switch, public Component {
     this->mac_address_[5] = f;
   }
   
-  // 设置设备 ID
-  void set_device_id(const std::string &device_id) { this->device_id_ = device_id; }
+  // 设置响应匹配令牌
+  void set_response_token(const std::string &token) { this->response_token_ = token; }
   
   // 设置重试参数
   void set_retry_count(uint8_t count) { this->retry_count_ = count; }
@@ -42,7 +42,7 @@ class ESPNowSwitch : public switch_::Switch, public Component {
   
   espnow::ESPNowComponent *espnow_{nullptr};
   uint8_t mac_address_[6];
-  std::string device_id_;
+  std::string response_token_;
   uint8_t retry_count_{40};
   uint32_t retry_interval_{100};
   

@@ -93,9 +93,9 @@ void ESPNowSwitch::on_espnow_broadcast(const uint8_t *data, size_t len) {
   // 将数据转换为字符串
   std::string response((char*)data, len);
   
-  // 检查响应中是否包含我们的设备 ID
-  if (response.find(this->device_id_) != std::string::npos) {
-    ESP_LOGI(TAG, "Response received from device: %s", this->device_id_.c_str());
+  // 检查响应中是否包含我们的匹配令牌
+  if (response.find(this->response_token_) != std::string::npos) {
+    ESP_LOGI(TAG, "Response received (matched token): %s", this->response_token_.c_str());
     this->response_received_ = true;
   }
 }

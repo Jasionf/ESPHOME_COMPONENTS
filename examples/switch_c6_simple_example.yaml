@@ -35,7 +35,7 @@ switch:
     name: "SwitchC6 Device 1"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
-    device_id: "142B-2F9F-8704"
+    response_token: "142B-2F9F-8704"
     retry_count: 40         
     retry_interval: 100      
   
@@ -43,7 +43,7 @@ switch:
     name: "SwitchC6 Device 2"
     espnow_id: espnow1
     mac_address: "AA:BB:CC:DD:EE:FF"
-    device_id: "1234-5678-9ABC"
+    response_token: "1234-5678-9ABC"
     retry_count: 30
     retry_interval: 150
   
