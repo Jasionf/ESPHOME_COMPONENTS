@@ -46,8 +46,8 @@ class ESPNowSwitch : public switch_::Switch, public Component {
   espnow::ESPNowComponent *espnow_{nullptr};
   uint8_t mac_address_[6];
   std::string response_token_;
-  uint8_t retry_count_{40};
-  uint32_t retry_interval_{100};
+  uint8_t retry_count_{12};
+  uint32_t retry_interval_{300};
   
   bool response_received_{false};
   std::string current_command_;

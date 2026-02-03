@@ -55,8 +55,8 @@ switch:
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
     response_token: "142B-2F9F-8704"
-    retry_count: 40
-    retry_interval: 100
+    retry_count: 12
+    retry_interval: 300
   
   # 设备 2
   - platform: espnow_switch
@@ -83,8 +83,8 @@ switch:
 | `espnow_id` | id | 是 | - | ESPNow 组件的 ID |
 | `mac_address` | string | 是 | - | 目标设备的 MAC 地址（格式：AA:BB:CC:DD:EE:FF） |
 | `response_token` | string | 是 | - | 与远端设备响应匹配的令牌（用于确认响应） |
-| `retry_count` | int | 否 | 40 | 发送命令的最大重试次数（1-100） |
-| `retry_interval` | int | 否 | 100 | 每次重试之间的间隔时间（毫秒，10-5000） |
+| `retry_count` | int | 否 | 12 | 发送命令的最大重试次数（1-100） |
+| `retry_interval` | int | 否 | 300 | 每次重试之间的间隔时间（毫秒，10-5000） |
 
 ## 工作原理
 
@@ -163,13 +163,20 @@ switch:
 espnow:
   id: espnow1
   auto_add_peer: true
+  on_broadcast:
+    - lambda: |-
+        // 将广播的数据传递给组件用于停止重试
+        id(sw1).handle_broadcast(data, size);
 
 switch:
   - platform: espnow_switch
+    id: sw1
     name: "SwitchC6"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
     response_token: "142B-2F9F-8704"
+    retry_count: 12
+    retry_interval: 300
 ```
 
 ## 调试
