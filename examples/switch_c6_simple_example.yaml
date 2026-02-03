@@ -11,8 +11,7 @@ logger:
   level: VERBOSE
 
 api:
-  encryption:
-    key: "X7+AfftIYMa/cDqk1pZ9dug7cas7U3/tg5zghRQ1Gow="
+  key: "X7+AfftIYMa/cDqk1pZ9dug7cas7U3/tg5zghRQ1Gow="
 
 ota:
   - platform: esphome
@@ -27,23 +26,19 @@ wifi:
 
 captive_portal:
 
-# ESPNow 组件配置（基础配置）
 espnow:
   id: espnow1
   auto_add_peer: true
 
-# 使用新的 espnow_switch 组件，可以轻松添加多个开关
 switch:
-  # 第一个 ESPNow 开关
   - platform: espnow_switch
     name: "SwitchC6 Device 1"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
     device_id: "142B-2F9F-8704"
-    retry_count: 40          # 可选：重试次数，默认 40
-    retry_interval: 100      # 可选：重试间隔(ms)，默认 100
+    retry_count: 40         
+    retry_interval: 100      
   
-  # 第二个 ESPNow 开关（示例）
   - platform: espnow_switch
     name: "SwitchC6 Device 2"
     espnow_id: espnow1
@@ -52,9 +47,3 @@ switch:
     retry_count: 30
     retry_interval: 150
   
-  # 可以继续添加更多开关...
-  # - platform: espnow_switch
-  #   name: "SwitchC6 Device 3"
-  #   espnow_id: espnow1
-  #   mac_address: "11:22:33:44:55:66"
-  #   device_id: "ABCD-EFGH-IJKL"

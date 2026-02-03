@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import switch
+from esphome.components import switch, espnow
 from esphome.const import CONF_ID
 from . import (
     espnow_switch_ns,
@@ -39,7 +39,7 @@ CONFIG_SCHEMA = (
     switch.switch_schema(ESPNowSwitch)
     .extend(
         {
-            cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(cg.Component),
+            cv.GenerateID(CONF_ESPNOW_ID): cv.use_id(espnow.ESPNowComponent),
             cv.Required(CONF_MAC_ADDRESS): validate_mac_address,
             cv.Required(CONF_DEVICE_ID): cv.string,
             cv.Optional(CONF_RETRY_COUNT, default=40): cv.int_range(min=1, max=100),
