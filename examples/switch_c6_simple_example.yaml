@@ -40,17 +40,13 @@ espnow:
     - B4:3A:45:81:EC:70
   on_broadcast:
     - lambda: |-
-        // 将广播的数据传递给组件用于停止重试
         id(sw1).handle_broadcast(data, size);
 
 switch:
-  # 第一个 ESPNow 开关
   - platform: espnow_switch
     id: sw1
     name: "SwitchC6 Device 1"
     espnow_id: espnow1
     mac_address: "B4:3A:45:81:EC:70"
-    response_token: "142B-2F9F-8704"
     retry_count: 12
     retry_interval: 300
-  
